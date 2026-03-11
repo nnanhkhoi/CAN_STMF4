@@ -1,0 +1,9 @@
+# Build output
+Debug/
+
+# IDE settings
+.settings/
+.cproject
+.mxproject
+.project
+*.launch
