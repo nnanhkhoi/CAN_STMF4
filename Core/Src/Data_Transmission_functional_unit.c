@@ -629,11 +629,13 @@ void send_can_message(uint8_t *message, uint8_t length) {
     TxHeader.StdId = 0x7E0; // Identifiant standard UDS pour l'ECU
     TxHeader.IDE = CAN_ID_STD;
     TxHeader.RTR = CAN_RTR_DATA;
+    TxHeader.TransmitGlobalTime = DISABLE;
 
-    if (HAL_CAN_AddTxMessage(&hcan1, &TxHeader, message, &TxMailbox) != HAL_OK) {
-        // G�rer l'erreur d'envoi
-        Error_Handler();
+    if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan1) == 0) {
+        return; // No free mailbox — drop the response rather than blocking
     }
+
+    HAL_CAN_AddTxMessage(&hcan1, &TxHeader, message, &TxMailbox);
 }
 
 /*
