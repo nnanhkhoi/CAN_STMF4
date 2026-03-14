@@ -91,7 +91,7 @@ static void send_test_can(const uds_test_case_t *tc)
   TxHeader.DLC = 8;
   TxHeader.TransmitGlobalTime = DISABLE;
 
-  // Attendre qu'une mailbox soit libre
+  // Wait for a free mailbox
   while (HAL_CAN_GetTxMailboxesFreeLevel(&hcan1) == 0)
   {
   }
@@ -117,7 +117,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+  static uint32_t last_tx_tick = 0;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -143,51 +143,6 @@ int main(void)
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
   UART_Send("UART Initialized Successfully!\r\n");
-
-  // Configurer le filtre CAN — accept ALL IDs for debugging
-  CAN_FilterTypeDef canfilterconfig;
-  canfilterconfig.FilterActivation = CAN_FILTER_ENABLE;
-  canfilterconfig.FilterBank = 0;
-  canfilterconfig.FilterFIFOAssignment = CAN_RX_FIFO0;
-  canfilterconfig.FilterIdHigh = 0x0000;
-  canfilterconfig.FilterIdLow = 0x0000;
-  canfilterconfig.FilterMaskIdHigh = 0x0000;   // Mask=0 => accept all IDs
-  canfilterconfig.FilterMaskIdLow = 0x0000;
-  canfilterconfig.FilterMode = CAN_FILTERMODE_IDMASK;
-  canfilterconfig.FilterScale = CAN_FILTERSCALE_32BIT;
-  canfilterconfig.SlaveStartFilterBank = 14;
-
-  if (HAL_CAN_ConfigFilter(&hcan1, &canfilterconfig) != HAL_OK)
-  {
-    UART_Send("ERR: CAN filter config failed\r\n");
-    Error_Handler();
-  }
-  UART_Send("CAN filter configured (accept all IDs)\r\n");
-
-  // Activer les notifications pour les interruptions CAN (RX + TX + errors)
-  if (HAL_CAN_ActivateNotification(&hcan1,
-        CAN_IT_RX_FIFO0_MSG_PENDING |
-        CAN_IT_TX_MAILBOX_EMPTY |
-        CAN_IT_ERROR_WARNING |
-        CAN_IT_ERROR_PASSIVE |
-        CAN_IT_BUSOFF |
-        CAN_IT_LAST_ERROR_CODE |
-        CAN_IT_ERROR) != HAL_OK)
-  {
-    UART_Send("ERR: CAN notification activation failed\r\n");
-    Error_Handler();
-  }
-  UART_Send("CAN notifications activated\r\n");
-
-  // Démarrer le module CAN
-  if (HAL_CAN_Start(&hcan1) != HAL_OK)
-  {
-    UART_Send("ERR: CAN start failed\r\n");
-    Error_Handler();
-  }
-  UART_Send("CAN started in Normal mode — waiting for external messages...\r\n");
-
-  uint32_t tx_counter = 0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -197,46 +152,6 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-
-    // Cyclic debug TX every 1 second
-    {
-      CAN_TxHeaderTypeDef TxHeader;
-      uint32_t TxMailbox;
-      uint8_t TxData[8] = {0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x00, 0x00, 0x00};
-      char buf[100];
-
-      // Put counter in bytes 4-7 so you can see it increment
-      TxData[4] = (uint8_t)(tx_counter >> 24);
-      TxData[5] = (uint8_t)(tx_counter >> 16);
-      TxData[6] = (uint8_t)(tx_counter >> 8);
-      TxData[7] = (uint8_t)(tx_counter);
-
-      TxHeader.StdId = 0x123;
-      TxHeader.IDE = CAN_ID_STD;
-      TxHeader.RTR = CAN_RTR_DATA;
-      TxHeader.DLC = 8;
-      TxHeader.TransmitGlobalTime = DISABLE;
-
-      uint32_t free = HAL_CAN_GetTxMailboxesFreeLevel(&hcan1);
-      if (free > 0)
-      {
-        HAL_StatusTypeDef status = HAL_CAN_AddTxMessage(&hcan1, &TxHeader, TxData, &TxMailbox);
-        snprintf(buf, sizeof(buf),
-          "[TX #%lu] ID=0x123 status=%s mailbox=%lu free=%lu\r\n",
-          (unsigned long)tx_counter,
-          (status == HAL_OK) ? "OK" : "FAIL",
-          (unsigned long)TxMailbox,
-          (unsigned long)free);
-      }
-      else
-      {
-        snprintf(buf, sizeof(buf),
-          "[TX #%lu] SKIPPED — no free mailbox (stuck, bus-off?)\r\n",
-          (unsigned long)tx_counter);
-      }
-      UART_Send(buf);
-      tx_counter++;
-    }
 
     // Print CAN RX debug info outside ISR (safe UART call)
     if (can_rx_flag)
@@ -255,8 +170,9 @@ int main(void)
     }
 
     // Print CAN error if any
-    if (can_error_code)
+    if (can_error_code &&  (HAL_GetTick() - last_tx_tick >= 1000) )
     {
+      last_tx_tick = HAL_GetTick();
       char buf[80];
       snprintf(buf, sizeof(buf), "[CAN ERR] ErrorCode=0x%08lX\r\n",
         (unsigned long)can_error_code);
@@ -264,7 +180,7 @@ int main(void)
       can_error_code = 0;
     }
 
-    HAL_Delay(1000);
+
   }
   /* USER CODE END 3 */
 }
@@ -292,8 +208,8 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
   RCC_OscInitStruct.PLL.PLLM = 8;
-  RCC_OscInitStruct.PLL.PLLN = 72;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV6;
+  RCC_OscInitStruct.PLL.PLLN = 64;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 4;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
@@ -306,10 +222,10 @@ void SystemClock_Config(void)
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -331,15 +247,15 @@ static void MX_CAN1_Init(void)
 
   /* USER CODE END CAN1_Init 1 */
   hcan1.Instance = CAN1;
-  hcan1.Init.Prescaler = 12;
+  hcan1.Init.Prescaler = 4;
   hcan1.Init.Mode = CAN_MODE_NORMAL;
   hcan1.Init.SyncJumpWidth = CAN_SJW_2TQ;
-  hcan1.Init.TimeSeg1 = CAN_BS1_13TQ;
-  hcan1.Init.TimeSeg2 = CAN_BS2_2TQ;
+  hcan1.Init.TimeSeg1 = CAN_BS1_12TQ;
+  hcan1.Init.TimeSeg2 = CAN_BS2_3TQ;
   hcan1.Init.TimeTriggeredMode = DISABLE;
-  hcan1.Init.AutoBusOff = ENABLE;
-  hcan1.Init.AutoWakeUp = ENABLE;
-  hcan1.Init.AutoRetransmission = DISABLE;
+  hcan1.Init.AutoBusOff = DISABLE;
+  hcan1.Init.AutoWakeUp = DISABLE;
+  hcan1.Init.AutoRetransmission = ENABLE;
   hcan1.Init.ReceiveFifoLocked = DISABLE;
   hcan1.Init.TransmitFifoPriority = DISABLE;
   if (HAL_CAN_Init(&hcan1) != HAL_OK)
@@ -347,7 +263,48 @@ static void MX_CAN1_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN CAN1_Init 2 */
+  // Configure CAN filter — accept ALL IDs for debugging
+  CAN_FilterTypeDef canfilterconfig;
+  canfilterconfig.FilterActivation = CAN_FILTER_ENABLE;
+  canfilterconfig.FilterBank = 0;
+  canfilterconfig.FilterFIFOAssignment = CAN_RX_FIFO0;
+  canfilterconfig.FilterIdHigh = 0x0000;
+  canfilterconfig.FilterIdLow = 0x0000;
+  canfilterconfig.FilterMaskIdHigh = 0x0000;   // Mask=0 => accept all IDs
+  canfilterconfig.FilterMaskIdLow = 0x0000;
+  canfilterconfig.FilterMode = CAN_FILTERMODE_IDMASK;
+  canfilterconfig.FilterScale = CAN_FILTERSCALE_32BIT;
+  canfilterconfig.SlaveStartFilterBank = 14;
 
+  if (HAL_CAN_ConfigFilter(&hcan1, &canfilterconfig) != HAL_OK)
+  {
+    UART_Send("ERR: CAN filter config failed\r\n");
+    Error_Handler();
+  }
+  UART_Send("CAN filter configured (accept all IDs)\r\n");
+
+  // Enable notifications for CAN interrupts (RX + TX + errors)
+  if (HAL_CAN_ActivateNotification(&hcan1,
+        CAN_IT_RX_FIFO0_MSG_PENDING |
+        CAN_IT_TX_MAILBOX_EMPTY |
+        CAN_IT_ERROR_WARNING |
+        CAN_IT_ERROR_PASSIVE |
+        CAN_IT_BUSOFF |
+        CAN_IT_LAST_ERROR_CODE |
+        CAN_IT_ERROR) != HAL_OK)
+  {
+    UART_Send("ERR: CAN notification activation failed\r\n");
+    Error_Handler();
+  }
+  UART_Send("CAN notifications activated\r\n");
+
+  // Démarrer le module CAN
+  if (HAL_CAN_Start(&hcan1) != HAL_OK)
+  {
+    UART_Send("ERR: CAN start failed\r\n");
+    Error_Handler();
+  }
+  UART_Send("CAN started in Normal mode — waiting for external messages...\r\n");
   /* USER CODE END CAN1_Init 2 */
 
 }
@@ -469,67 +426,74 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
     memcpy((void *)&can_rx_debug_header, &RxHeader, sizeof(CAN_RxHeaderTypeDef));
     can_rx_flag = 1;
 
+    // Only process UDS requests on expected IDs (0x7DF functional, 0x7E0 physical)
+    // Ignore own TX frames (0x123) and loopback responses (0x7E0 is also our response ID)
+    // if (RxHeader.StdId != 0x7DF)
+    // {
+    //   return;
+    // }
+
     // Identifier le service UDS basé sur le premier octet du message
     switch (rcvd_msg[0])
     {
     case UDS_DIAGNOSTIC_SESSION_CONTROL:
-      // Appeler la fonction pour le service Diagnostic Session Control
+      // Call the Diagnostic Session Control service handler
       uds_diagnostic_session_control(rcvd_msg[1]);
       break;
 
     case UDS_ECU_RESET:
-      // Appeler la fonction pour le service ECU Reset avec le resetType
+      // Call the ECU Reset service handler with resetType
       uds_ecu_reset(rcvd_msg[1]);
       break;
     case UDS_SECURITY_ACCESS:
-      // Appeler directement la fonction pour le service Security Access
+      // Call the Security Access service handler
       uds_security_access(rcvd_msg[1], &rcvd_msg[2], RxHeader.DLC - 2);
       break;
     case UDS_COMMUNICATION_CONTROL:
       uds_communication_control(rcvd_msg[1]);
       break;
     case UDS_TESTER_PRESENT:
-      // Appeler la fonction pour le service TesterPresent
+      // Call the TesterPresent service handler
       uds_tester_present(rcvd_msg[1]);
       break;
     case UDS_ACCESS_TIMING_PARAMETER:
-      // Appeler la fonction pour le service Access Timing Parameter
+      // Call the Access Timing Parameter service handler
       uds_access_timing_parameter(rcvd_msg[1], &rcvd_msg[2], RxHeader.DLC - 2);
       break;
     case UDS_SECURED_DATA_TRANSMISSION:
-      // Appeler la fonction pour le service Secured Data Transmission
+      // Call the Secured Data Transmission service handler
       uds_secured_data_transmission(&rcvd_msg[1], RxHeader.DLC - 1);
       break;
     case UDS_CONTROL_DTC_SETTING:
-      // Appeler la fonction pour le service ControlDTCSetting
+      // Call the ControlDTCSetting service handler
       uds_control_dtc_setting(rcvd_msg[1]);
       break;
     case UDS_RESPONSE_ON_EVENT:
-      // Appeler la fonction pour le service ResponseOnEvent
+      // Call the ResponseOnEvent service handler
       uds_response_on_event(rcvd_msg[1], &rcvd_msg[2], RxHeader.DLC - 2);
       break;
     case UDS_LINK_CONTROL:
-      // Appeler la fonction pour le service LinkControl
+      // Call the LinkControl service handler
       uds_link_control(rcvd_msg[1], &rcvd_msg[2], RxHeader.DLC - 2);
       break;
     case UDS_READ_DATA_BY_IDENTIFIER:
-      // Appeler la fonction pour le service ReadDataByIdentifier
+      // Call the ReadDataByIdentifier service handler
       uds_read_data_by_identifier(&rcvd_msg[1], RxHeader.DLC - 1);
       break;
     case UDS_READ_DATA_BY_PERIODIC_IDENTIFIER:
-      // Appeler la fonction pour le service ReadDataByPeriodicIdentifier
+      // Call the ReadDataByPeriodicIdentifier service handler
       uds_read_data_by_periodic_identifier(&rcvd_msg[1], RxHeader.DLC - 1);
       break;
     case UDS_DYNAMICAL_DEFINE_DATA_IDENTIFIER:
-      // Appeler la fonction pour le service DynamicallyDefineDataIdentifier
+      // Call the DynamicallyDefineDataIdentifier service handler
       uds_dynamically_define_data_identifier(rcvd_msg[1], &rcvd_msg[2], RxHeader.DLC - 2);
       break;
     case UDS_WRITE_DATA_BY_IDENTIFIER:
-      // Appeler la fonction pour le service WriteDataByIdentifier
+      // Call the WriteDataByIdentifier service handler
       uds_write_data_by_identifier(&rcvd_msg[1], RxHeader.DLC - 1);
       break;
     case UDS_CLEAR_DIAGNOSTIC_INFORMATION:
-      // Appeler la fonction pour le service ClearDiagnosticInformation
+      // Call the ClearDiagnosticInformation service handler
       uds_clear_diagnostic_information(&rcvd_msg[1], RxHeader.DLC - 1);
       break;
     case UDS_READ_DTC_INFORMATION:

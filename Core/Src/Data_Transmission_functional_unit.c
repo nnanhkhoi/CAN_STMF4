@@ -33,7 +33,7 @@ void uds_read_data_by_identifier(uint8_t* data, uint8_t data_length) {
 
     response[response_index++] = UDS_READ_DATA_BY_IDENTIFIER + 0x40;  // SID de r�ponse 0x62
 
-    // Boucle pour chaque dataIdentifier
+    // Loop for each dataIdentifier
     for (uint8_t i = 0; i < data_length; i += 2) {
         uint16_t did = (data[i] << 8) | data[i + 1];  // R�cup�ration du DID
 
@@ -52,24 +52,24 @@ void uds_read_data_by_identifier(uint8_t* data, uint8_t data_length) {
         switch (did) {
             case SUPPORTED_DID_1:
                 // Ajout du DID et des donn�es associ�es � la r�ponse
-                response[response_index++] = data[i];       // MSB du DID
-                response[response_index++] = data[i + 1];   // LSB du DID
+                response[response_index++] = data[i];       // DID MSB
+                response[response_index++] = data[i + 1];   // DID LSB
                 memcpy(&response[response_index], data_record_1, sizeof(data_record_1));
                 response_index += sizeof(data_record_1);
                 did_supported = true;
                 break;
 
             case SUPPORTED_DID_2:
-                response[response_index++] = data[i];       // MSB du DID
-                response[response_index++] = data[i + 1];   // LSB du DID
+                response[response_index++] = data[i];       // DID MSB
+                response[response_index++] = data[i + 1];   // DID LSB
                 memcpy(&response[response_index], data_record_2, sizeof(data_record_2));
                 response_index += sizeof(data_record_2);
                 did_supported = true;
                 break;
 
             case SUPPORTED_DID_3:
-                response[response_index++] = data[i];       // MSB du DID
-                response[response_index++] = data[i + 1];   // LSB du DID
+                response[response_index++] = data[i];       // DID MSB
+                response[response_index++] = data[i + 1];   // DID LSB
                 memcpy(&response[response_index], data_record_3, sizeof(data_record_3));
                 response_index += sizeof(data_record_3);
                 did_supported = true;
@@ -117,10 +117,10 @@ void send_positive_response_read_data_by_identifier(uint8_t* dataIdentifiers, ui
 
     // Ajouter les DIDs et leurs enregistrements associ�s
     for (uint8_t i = 0; i < number_of_dids; i++) {
-        response[index++] = dataIdentifiers[2 * i];     // MSB du DID
-        response[index++] = dataIdentifiers[2 * i + 1]; // LSB du DID
-        response[index++] = dataRecords[2 * i];         // Valeur de l'enregistrement
-        response[index++] = dataRecords[2 * i + 1];     // Valeur de l'enregistrement
+        response[index++] = dataIdentifiers[2 * i];     // DID MSB
+        response[index++] = dataIdentifiers[2 * i + 1]; // DID LSB
+        response[index++] = dataRecords[2 * i];         // Record value
+        response[index++] = dataRecords[2 * i + 1];     // Record value
     }
 
     // Envoyer la r�ponse via CAN
@@ -136,7 +136,7 @@ void send_negative_response_read_data_by_identifier(uint8_t nrc) {
     uint8_t response[3] = {0};
 
     response[0] = UDS_NEGATIVE_RESPONSE;  // SID pour r�ponse n�gative 0x7F
-    response[1] = UDS_READ_DATA_BY_IDENTIFIER;  // SID du service 0x22
+    response[1] = UDS_READ_DATA_BY_IDENTIFIER;  // Service SID 0x22
     response[2] = nrc;  // Code de r�ponse n�gative (NRC)
 
     send_can_message(response, 3);
@@ -159,8 +159,8 @@ void uds_read_memory_by_address(uint8_t* data, uint8_t data_length) {
     }
 
     uint8_t addressAndLengthFormatIdentifier = data[0];
-    uint8_t address_length = addressAndLengthFormatIdentifier & 0x0F; // Bas nibble
-    uint8_t size_length = (addressAndLengthFormatIdentifier >> 4) & 0x0F; // Haut nibble
+    uint8_t address_length = addressAndLengthFormatIdentifier & 0x0F; // Low nibble
+    uint8_t size_length = (addressAndLengthFormatIdentifier >> 4) & 0x0F; // High nibble
 
     // V�rifier si l'ALFID est valide
     if (address_length < 1 || address_length > 4 || size_length < 1 || size_length > 4) {
@@ -218,7 +218,7 @@ void send_negative_response_read_memory_by_address(uint8_t nrc) {
     uint8_t response[3] = {0};
 
     response[0] = UDS_NEGATIVE_RESPONSE;  // SID pour r�ponse n�gative 0x7F
-    response[1] = UDS_READ_MEMORY_BY_ADDRESS;  // SID du service 0x23
+    response[1] = UDS_READ_MEMORY_BY_ADDRESS;  // Service SID 0x23
     response[2] = nrc;  // Code de r�ponse n�gative (NRC)
 
     send_can_message(response, 3);

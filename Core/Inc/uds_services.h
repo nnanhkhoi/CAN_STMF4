@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include "main.h"
 
-// Codes de rponse ngative (Negative Response Code - NRC)
+// Negative Response Codes (Negative Response Code - NRC)
 #define UDS_NEGATIVE_RESPONSE                0x7F
 #define NRC_SERVICE_NOT_SUPPORTED            0x11
 #define NRC_SUB_FUNCTION_NOT_SUPPORTED       0x12

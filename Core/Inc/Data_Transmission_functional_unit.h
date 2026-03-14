@@ -7,13 +7,13 @@
 
 extern void send_can_message(uint8_t *message, uint8_t length);
 // extern void send_uart_message(uint8_t *message, uint8_t length);
-// Définitions des tailles
+// Size definitions
 #define MAX_DATA_SIZE 64
 #define MAX_PERIODIC_PIDS 16
 #define MAX_DYNAMIC_DIDS 10
 #define MAX_DATA_IDENTIFIERS 10
 
-// Identifiants de Service UDS pour cette unité fonctionnelle
+// UDS Service identifiers for this functional unit
 #define UDS_READ_DATA_BY_IDENTIFIER                0x22
 #define UDS_READ_MEMORY_BY_ADDRESS                 0x23
 #define UDS_READ_SCALING_DATA_BY_IDENTIFIER        0x24
@@ -22,34 +22,34 @@ extern void send_can_message(uint8_t *message, uint8_t length);
 #define UDS_WRITE_DATA_BY_IDENTIFIER               0x2E
 #define UDS_WRITE_MEMORY_BY_ADDRESS                0x3D
 
-// Sous-fonctions pour DynamicallyDefineDataIdentifier
+// Sub-functions for DynamicallyDefineDataIdentifier
 #define UDS_DDDI_DEFINE_BY_IDENTIFIER              0x01
 #define UDS_DDDI_DEFINE_BY_MEMORY_ADDRESS          0x02
 #define UDS_DDDI_CLEAR_DYNAMIC_IDENTIFIER          0x03
 
-// Définition des transmissionModes
+// Transmission modes definition
 #define UDS_TRANSMISSION_MODE_SLOW      0x01
 #define UDS_TRANSMISSION_MODE_MEDIUM    0x02
 #define UDS_TRANSMISSION_MODE_FAST      0x03
 #define UDS_TRANSMISSION_MODE_STOP      0x04
 
-// Structure pour stocker les informations sur les PIDs périodiques
+// Structure to store periodic PIDs information
 typedef struct {
-    uint8_t periodicDataIdentifier;  // Identifiant PID
-    uint8_t transmissionMode;        // Mode de transmission (slow, medium, fast)
-    bool isActive;                   // Indicateur d'activité
+    uint8_t periodicDataIdentifier;  // PID identifier
+    uint8_t transmissionMode;        // Transmission mode (slow, medium, fast)
+    bool isActive;                   // Activity indicator
 } PeriodicPIDInfo;
 
-// Structure pour les Data Identifiers
+// Structure for Data Identifiers
 typedef struct {
     uint16_t dataIdentifier;
-    uint8_t dataRecord[MAX_DATA_SIZE];  // Données associées à l'identifiant
-    uint8_t dataLength;                 // Longueur des données
-    bool isSecured;                     // Indicateur de protection (si sécurisé)
-    bool isWritable;                    // Indicateur si l'identifiant est accessible en écriture
+    uint8_t dataRecord[MAX_DATA_SIZE];  // Data associated with identifier
+    uint8_t dataLength;                 // Data length
+    bool isSecured;                     // Protection indicator (if secured)
+    bool isWritable;                    // Indicator if identifier is writable
 } DataIdentifier;
 
-// Structures pour DynamicallyDefineDataIdentifier
+// Structures for DynamicallyDefineDataIdentifier
 typedef struct {
     uint16_t dynamicDataIdentifier;
     uint16_t sourceDataIdentifier;
@@ -59,7 +59,7 @@ typedef struct {
 
 extern PeriodicPIDInfo periodic_pid_list[MAX_PERIODIC_PIDS];
 
-// Prototypes des fonctions UDS pour cette unité fonctionnelle
+// UDS function prototypes for this functional unit
 
 void uds_read_data_by_identifier(uint8_t* data, uint8_t data_length);
 bool is_security_required_for_did(uint16_t did);

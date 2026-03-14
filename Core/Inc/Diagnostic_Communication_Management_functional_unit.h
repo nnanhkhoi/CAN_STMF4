@@ -2,14 +2,14 @@
 #define DIAGNOSTIC_COMMUNICATION_MANAGEMENT_FUNCTIONAL_UNIT_H_
 
 #include "uds_services.h"
-// Définitions des tailles
+// Size definitions
 #define MAX_DATA_SIZE 64
 #define MAX_EVENTS 10
 #define DEFAULT_ENCRYPTION_KEY {0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, \
                                 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF}
 
 
-// Identifiants de Service UDS pour cette unité fonctionnelle
+// UDS Service identifiers for this functional unit
 #define UDS_DIAGNOSTIC_SESSION_CONTROL   0x10
 #define UDS_ECU_RESET                    0x11
 #define UDS_SECURITY_ACCESS              0x27
@@ -21,29 +21,29 @@
 #define UDS_RESPONSE_ON_EVENT            0x86
 #define UDS_LINK_CONTROL                 0x87
 
-// Types de session pour DIAGNOSTIC_SESSION_CONTROL
-#define UDS_SESSION_DEFAULT                             0x01 // Session par défaut
-#define UDS_SESSION_PROGRAMMING                         0x02 // Session de programmation
-#define UDS_SESSION_EXTENDED_DIAGNOSTIC                 0x03 // Session de diagnostic étendue
-#define UDS_SESSION_SAFETY_SYSTEM                       0x04 // Session du système de sécurité
-#define UDS_SESSION_ISO_SAE_RESERVED                    0x00 // Bits réservés par ISO SAE (0x00)
-#define UDS_SESSION_VEHICLE_MANUFACTURER_SPECIFIC       0x40 // Session spécifique au constructeur du véhicule
-#define UDS_SESSION_SYSTEM_SUPPLIER_SPECIFIC            0x60 // Session spécifique au fournisseur de système
+// Session types for DIAGNOSTIC_SESSION_CONTROL
+#define UDS_SESSION_DEFAULT                             0x01 // Default session
+#define UDS_SESSION_PROGRAMMING                         0x02 // Programming session
+#define UDS_SESSION_EXTENDED_DIAGNOSTIC                 0x03 // Extended diagnostic session
+#define UDS_SESSION_SAFETY_SYSTEM                       0x04 // Safety system session
+#define UDS_SESSION_ISO_SAE_RESERVED                    0x00 // ISO SAE reserved bits (0x00)
+#define UDS_SESSION_VEHICLE_MANUFACTURER_SPECIFIC       0x40 // Vehicle manufacturer specific session
+#define UDS_SESSION_SYSTEM_SUPPLIER_SPECIFIC            0x60 // System supplier specific session
 
 
-// Sous-fonctions pour ECU Reset
+// Sub-functions for ECU Reset
 #define UDS_RESET_TYPE_HARD_RESET                       0x01
 #define UDS_RESET_TYPE_SOFT_RESET                       0x03
 #define UDS_RESET_TYPE_ENABLE_RAPID_POWER_SHUTDOWN      0x04
 #define UDS_RESET_TYPE_DISABLE_RAPID_POWER_SHUTDOWN     0x05
 
-// Sous-fonctions pour Security Access
+// Sub-functions for Security Access
 #define UDS_SECURITY_ACCESS_REQUEST_SEED_LVL1           0x01
 #define UDS_SECURITY_ACCESS_SEND_KEY_LVL1               0x02
 #define UDS_SECURITY_ACCESS_REQUEST_SEED_LVL2           0x03
 #define UDS_SECURITY_ACCESS_SEND_KEY_LVL2               0x04
 
-// Sous-fonctions pour Communication Control
+// Sub-functions for Communication Control
 #define UDS_COMM_CONTROL_ENABLE_RX_AND_TX                    0x00
 #define UDS_COMM_CONTROL_ENABLE_RX_AND_DISABLE_TX            0x01
 #define UDS_COMM_CONTROL_DISABLE_RX_AND_ENABLE_TX            0x02
@@ -51,47 +51,47 @@
 #define UDS_COMM_CONTROL_ENABLE_RX_AND_TX_WITH_ENHANCED_INFO 0x04
 #define UDS_COMM_CONTROL_ENABLE_RX_WITH_ENHANCED_INFO        0x05
 
-// Sous-fonctions pour Tester Present
-#define UDS_TESTER_PRESENT_ZERO_SUB_FUNCTION    0x00 // Sous-fonction 0x00 (autorisé)
-#define UDS_TESTER_PRESENT_RESERVED_MIN         0x01 // Sous-fonctions 0x01 à 0x7F (réservé ISO)
-#define UDS_TESTER_PRESENT_SUB_FUNCTION_MASK    0x7F // Masque pour vérifier la sous-fonction
-#define UDS_SUPPRESS_POS_RSP_MSG_INDICATION_BIT 0x80 // Masque pour suppressPosRspMsgIndicationBit (bit 7)
+// Sub-functions for Tester Present
+#define UDS_TESTER_PRESENT_ZERO_SUB_FUNCTION    0x00 // Sub-function 0x00 (allowed)
+#define UDS_TESTER_PRESENT_RESERVED_MIN         0x01 // Sub-functions 0x01 to 0x7F (ISO reserved)
+#define UDS_TESTER_PRESENT_SUB_FUNCTION_MASK    0x7F // Mask to check sub-function
+#define UDS_SUPPRESS_POS_RSP_MSG_INDICATION_BIT 0x80 // Mask for suppressPosRspMsgIndicationBit (bit 7)
 #define UDS_ZERO_SUB_FUNCTION                   0x00
 #define UDS_SUPPRESS_POS_RSP_BIT                0x80
 
-// Sous-fonctions pour Access Timing Parameter
-#define UDS_TIMING_PARAMETER_READ        0x01 // Lire les paramètres de temporisation
-#define UDS_TIMING_PARAMETER_WRITE       0x02 // Écrire de nouveaux paramètres de temporisation
+// Sub-functions for Access Timing Parameter
+#define UDS_TIMING_PARAMETER_READ        0x01 // Read timing parameters
+#define UDS_TIMING_PARAMETER_WRITE       0x02 // Write new timing parameters
 
-// Sous-fonctions pour ControlDTCSetting
-#define UDS_CONTROL_DTC_SETTING_ON       0x01  // Activer la mise à jour des DTC
-#define UDS_CONTROL_DTC_SETTING_OFF      0x02  // Désactiver la mise à jour des DTC
+// Sub-functions for ControlDTCSetting
+#define UDS_CONTROL_DTC_SETTING_ON       0x01  // Enable DTC update
+#define UDS_CONTROL_DTC_SETTING_OFF      0x02  // Disable DTC update
 
-// Sous-fonctions pour ResponseOnEvent
+// Sub-functions for ResponseOnEvent
 #define ROE_STOP_RESPONSE_ON_EVENT       0x00
 #define ROE_ON_DTC_STATUS_CHANGE         0x01
 #define ROE_ON_TIMER_INTERRUPT           0x02
 #define ROE_START_RESPONSE_ON_EVENT      0x05
 #define ROE_CLEAR_RESPONSE_ON_EVENT      0x06
 
-// Sous-fonctions pour LinkControl
+// Sub-functions for LinkControl
 #define UDS_LINK_CONTROL_VERIFY_MODE_TRANSITION_FIXED     0x01
 #define UDS_LINK_CONTROL_VERIFY_MODE_TRANSITION_SPECIFIC  0x02
 #define UDS_LINK_CONTROL_TRANSITION_MODE                  0x03
 
-// Structure de session UDS
+// UDS session structure
 typedef struct {
     uint8_t current_session;
     bool security_access_granted;
 } UDS_Session;
 
-// Structure pour les paramètres de temporisation
+// Structure for timing parameters
 typedef struct {
     uint16_t p2_server_max;
     uint16_t p2_star_server_max;
 } TimingParameters;
 
-// Structures de données pour la transmission sécurisée
+// Data structures for secured transmission
 typedef struct {
     uint8_t encrypted_data[MAX_DATA_SIZE];
     uint8_t data_length;
@@ -99,36 +99,36 @@ typedef struct {
 
 typedef struct {
     uint8_t session_id;
-    uint8_t encryption_key[16];  // Clé pour le chiffrement/déchiffrement
+    uint8_t encryption_key[16];  // Key for encryption/decryption
 } SecuritySession;
 
-// Structure d'événement pour ResponseOnEvent
+// Event structure for ResponseOnEvent
 typedef struct {
     uint8_t eventType;
     uint8_t serviceToRespondTo;
     bool isActive;
-    uint32_t eventWindowTime; // Temps pendant lequel l'événement est actif
+    uint32_t eventWindowTime; // Time during which event is active
 } Event;
 
-// Structure pour le service LinkControl
+// Structure for LinkControl service
 typedef struct {
     uint8_t modeIdentifier;
-    uint8_t linkRecord[3]; // Pour stocker les paramètres spécifiques si nécessaire
+    uint8_t linkRecord[3]; // To store specific parameters if needed
 } LinkControl;
 
 
-// Déclaration des variables de seed et key
+// Seed and key variable declarations
 extern uint8_t security_seed_lvl1;
 extern uint8_t security_key_lvl1;
 extern uint8_t security_seed_lvl2;
 extern uint8_t security_key_lvl2;
 
-// Déclaration des DIDs supportés
+// Supported DIDs declaration
 #define SUPPORTED_DID_1 0x1001
 #define SUPPORTED_DID_2 0x1002
 #define SUPPORTED_DID_3 0x1003
 
-// Initialisation de la session
+// Session initialization
 extern UDS_Session uds_session;
 extern SecuritySession current_session;
 extern Event events[MAX_EVENTS];

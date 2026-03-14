@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include "uds_services.h"
 
-// Définition des tailles
+// Size definitions
 #define MAX_DTC_EXT_DATA_RECORD_SIZE 64
 #define MAX_DTC_COUNT 255
 #define DTC_STATUS_MASK 0xFF
@@ -13,17 +13,17 @@
 #define UDS_CLEAR_DIAGNOSTIC_INFORMATION 0x14
 #define UDS_READ_DTC_INFORMATION         0x19
 
-// Définition des identifiants de service
+// Service identifier definitions
 #define UDS_CLEAR_DIAGNOSTIC_INFORMATION_REQUEST 0x14
 #define UDS_CLEAR_DIAGNOSTIC_INFORMATION_RESPONSE 0x54
 
 #define DTC_STATUS_PERMANENT 0x10
 #define MAX_RESPONSE_LENGTH 64
 
-#define DTC_TEST_FAILED 0x01     // Indique un DTC échoué
-#define DTC_CONFIRMED 0x02       // Indique un DTC confirmé
+#define DTC_TEST_FAILED 0x01     // Indicates a failed DTC
+#define DTC_CONFIRMED 0x02       // Indicates a confirmed DTC
 
-// Sous-fonctions pour le service ReadDTCInformation (0x19)
+// Sub-functions for ReadDTCInformation service (0x19)
 #define REPORT_NUMBER_OF_DTC_BY_STATUS_MASK        0x01
 #define REPORT_DTC_BY_STATUS_MASK                  0x02
 #define REPORT_DTC_SNAPSHOT_IDENTIFICATION         0x03
@@ -54,26 +54,26 @@
 
 
 
-// Structure pour les enregistrements DTC
+// Structure for DTC records
 typedef struct {
-      uint32_t dtcNumber;  // Numéro de DTC
-      uint8_t status;      // Statut du DTC
-      uint8_t severity;    // Gravité du DTC
+      uint32_t dtcNumber;  // DTC number
+      uint8_t status;      // DTC status
+      uint8_t severity;    // DTC severity
 
-      // Pour les snapshots DTC
-      uint8_t snapshotRecordNumber;       // Numéro d'enregistrement du snapshot
-      uint8_t snapshotData[MAX_DTC_EXT_DATA_RECORD_SIZE];  // Données du snapshot
-      uint8_t snapshotDataLength;         // Taille des données du snapshot
+      // For DTC snapshots
+      uint8_t snapshotRecordNumber;       // Snapshot record number
+      uint8_t snapshotData[MAX_DTC_EXT_DATA_RECORD_SIZE];  // Snapshot data
+      uint8_t snapshotDataLength;         // Snapshot data size
 
-      // Pour les données stockées DTC (DTCStoredData)
-      uint16_t storedDataRecordNumber;    // Numéro d'enregistrement des données stockées
-      uint8_t storedData[MAX_DTC_EXT_DATA_RECORD_SIZE];    // Données stockées
+      // For DTC stored data (DTCStoredData)
+      uint16_t storedDataRecordNumber;    // Stored data record number
+      uint8_t storedData[MAX_DTC_EXT_DATA_RECORD_SIZE];    // Stored data
       uint8_t storedDataLength;
-      uint8_t isEmissionRelated;  // Ajoutez ce champ si nécessaire
-      uint8_t faultDetectionCounter;  // Ajoutez également ce champ si nécessaire
+      uint8_t isEmissionRelated;  // Add this field if needed
+      uint8_t faultDetectionCounter;  // Also add this field if needed
 } DTC_Record;
 
-// Prototypes des fonctions UDS pour cette unité fonctionnelle
+// UDS function prototypes for this functional unit
 
 // ClearDiagnosticInformation
 void uds_clear_diagnostic_information(uint8_t* data, uint8_t data_length);

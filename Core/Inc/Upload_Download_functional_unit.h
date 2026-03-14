@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include "uds_services.h"
 
-// Identifiants des services Upload/Download UDS
+// UDS Upload/Download service identifiers
 #define UDS_REQUEST_DOWNLOAD         0x34
 #define UDS_REQUEST_UPLOAD           0x35
 #define UDS_TRANSFER_DATA            0x36
@@ -17,71 +17,71 @@
 
 
 typedef struct {
-    uint8_t dataFormatIdentifier;                // Identifiant de format de données
-    uint8_t addressAndLengthFormatIdentifier;    // Identifiant de format d'adresse et de longueur
-    uint8_t memoryAddress[4];                     // Adresse mémoire (max 4 octets)
-    uint8_t memorySize[4];                        // Taille mémoire (max 4 octets)
+    uint8_t dataFormatIdentifier;                // Data format identifier
+    uint8_t addressAndLengthFormatIdentifier;    // Address and length format identifier
+    uint8_t memoryAddress[4];                     // Memory address (max 4 bytes)
+    uint8_t memorySize[4];                        // Memory size (max 4 bytes)
 } RequestDownload_t;
 
-// Structure pour la réponse de téléchargement
+// Structure for download response
 typedef struct {
-    uint8_t lengthFormatIdentifier;               // Identifiant de format de longueur
-    uint8_t maxNumberOfBlockLength[2];           // Longueur maximale des blocs
+    uint8_t lengthFormatIdentifier;               // Length format identifier
+    uint8_t maxNumberOfBlockLength[2];           // Maximum block length
 } ResponseDownload_t;
 
-// Définition des Structures
+// Structure definitions
 typedef struct {
     uint8_t dataFormatIdentifier; // DFI
     uint8_t addressAndLengthFormatIdentifier; // ALFID
-    uint8_t memoryAddress[4]; // Peut être ajusté selon la taille
-    uint8_t memorySize[4]; // Peut être ajusté selon la taille
+    uint8_t memoryAddress[4]; // Can be adjusted based on size
+    uint8_t memorySize[4]; // Can be adjusted based on size
 } RequestUpload_t;
 
 typedef struct {
     uint8_t lengthFormatIdentifier; // LFID
-    uint8_t maxNumberOfBlockLength[2]; // Peut être ajusté selon la taille
+    uint8_t maxNumberOfBlockLength[2]; // Can be adjusted based on size
 } ResponseUpload_t;
 
 typedef struct {
     uint8_t blockSequenceCounter; // BSC
-    uint8_t transferRequestParameterRecord[255]; // Paramètres de requête (ajuster selon les besoins)
+    uint8_t transferRequestParameterRecord[255]; // Request parameters (adjust as needed)
 } RequestTransferData_t;
 
 typedef struct {
     uint8_t blockSequenceCounter; // BSC
-    uint8_t transferResponseParameterRecord[255]; // Paramètres de réponse (ajuster selon les besoins)
+    uint8_t transferResponseParameterRecord[255]; // Response parameters (adjust as needed)
 } ResponseTransferData_t;
 
-// Structure pour la requête RequestTransferExit
+// Structure for RequestTransferExit request
 typedef struct {
-    uint8_t transferRequestParameterRecord[256]; // Taille arbitraire, ajustez selon vos besoins
+    uint8_t transferRequestParameterRecord[256]; // Arbitrary size, adjust as needed
 } RequestTransferExit_t;
 
-// Structure pour la réponse au service
+// Structure for service response
 typedef struct {
-    uint8_t transferResponseParameterRecord[256]; // Taille arbitraire, ajustez selon vos besoins
+    uint8_t transferResponseParameterRecord[256]; // Arbitrary size, adjust as needed
 } ResponseTransferExit_t;
 
 typedef struct {
-    uint8_t modeOfOperation;             // 0x01 - 0x05 : Mode d'opération
-    uint16_t filePathAndNameLength;      // Longueur du chemin du fichier
-    uint8_t filePathAndName[255];        // Chemin du fichier (jusqu'à 255 octets)
-    uint8_t dataFormatIdentifier;         // Identifiant du format de données
-    uint16_t fileSizeParameterLength;     // Longueur du paramètre de taille de fichier
-    uint8_t fileSizeUncompressed[4];      // Taille non compressée (4 octets)
-    uint8_t fileSizeCompressed[4];        // Taille compressée (4 octets)
+    uint8_t modeOfOperation;             // 0x01 - 0x05 : Operation mode
+    uint16_t filePathAndNameLength;      // File path length
+    uint8_t filePathAndName[255];        // File path (up to 255 bytes)
+    uint8_t dataFormatIdentifier;         // Data format identifier
+    uint16_t fileSizeParameterLength;     // File size parameter length
+    uint8_t fileSizeUncompressed[4];      // Uncompressed size (4 bytes)
+    uint8_t fileSizeCompressed[4];        // Compressed size (4 bytes)
 } RequestFileTransfer_t;
 
 
 typedef struct {
-    uint8_t SID; // Identifiant de service
-    uint8_t modeOfOperation; // Écho du mode d'opération
-    uint8_t lengthFormatIdentifier; // Longueur du maxNumberOfBlockLength
-    uint8_t maxNumberOfBlockLength[2]; // Longueur maximale du bloc
-    uint8_t dataFormatIdentifier; // Écho du format de données
-    uint16_t fileSizeOrDirInfoParameterLength; // Longueur du paramètre
-    uint8_t fileSizeUncompressedOrDirInfoLength[4]; // Taille du fichier
-    uint8_t fileSizeCompressed[4]; // Taille compressée
+    uint8_t SID; // Service identifier
+    uint8_t modeOfOperation; // Operation mode echo
+    uint8_t lengthFormatIdentifier; // maxNumberOfBlockLength length
+    uint8_t maxNumberOfBlockLength[2]; // Maximum block length
+    uint8_t dataFormatIdentifier; // Data format echo
+    uint16_t fileSizeOrDirInfoParameterLength; // Parameter length
+    uint8_t fileSizeUncompressedOrDirInfoLength[4]; // File size
+    uint8_t fileSizeCompressed[4]; // Compressed size
 } ResponseFileTransfer_t;
 
 
