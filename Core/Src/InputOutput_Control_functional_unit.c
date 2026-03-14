@@ -11,36 +11,36 @@
 
 /************************************************InputOutputControlByIdentifier*************************************************/
 
-// Fonction pour gérer la commande InputOutputControlByIdentifier
+// Function to handle the InputOutputControlByIdentifier command
 void uds_input_output_control_by_identifier(IOControlRequest_t *request, IOControlResponse_t *response) {
-    // Vérification de la longueur minimale du message
+    // Check the minimum message length
     if (sizeof(*request) < (sizeof(request->SID) + sizeof(request->dataIdentifier) + sizeof(request->controlOptionRecord))) {
         send_negative_response_input_output_control_by_identifier(NRC_INCORRECT_MESSAGE_LENGTH);
         return;
     }
 
-    // Vérification de la prise en charge de l'Identifiant de Données (DID)
+    // Check if the Data Identifier (DID) is supported for writing
     if (!is_data_identifier_supported_for_write(request->dataIdentifier)) {
         send_negative_response_input_output_control_by_identifier(NRC_REQUEST_OUT_OF_RANGE);
         return;
     }
 
-    // Traitement des options de contrôle
+    // Process control options
     switch (request->controlOptionRecord) {
         case IOCP_SHORT_TERM_ADJUSTMENT:
-            // Appliquer les états de contrôle
-            // Ici, vous devez ajouter votre logique pour contrôler l'ECU
-            // Exemple : write_data_to_identifier(request->dataIdentifier, request->controlState, sizeof(request->controlState));
+            // Apply control states
+            // Here, you should add your logic to control the ECU
+            // Example: write_data_to_identifier(request->dataIdentifier, request->controlState, sizeof(request->controlState));
             break;
 
         case IOCP_RETURN_CONTROL_TO_ECU:
-            // Logique pour retourner le contrôle à l'ECU
-            // Exemple : return_control_to_ecu(request->dataIdentifier);
+            // Logic to return control to the ECU
+            // Example: return_control_to_ecu(request->dataIdentifier);
             break;
 
         case IOCP_FREEZE_CURRENT_STATE:
-            // Logique pour geler l'état actuel
-            // Exemple : freeze_current_state(request->dataIdentifier);
+            // Logic to freeze the current state
+            // Example: freeze_current_state(request->dataIdentifier);
             break;
 
         default:
@@ -48,49 +48,49 @@ void uds_input_output_control_by_identifier(IOControlRequest_t *request, IOContr
             return;
     }
 
-    // Préparer la réponse positive
+    // Prepare the positive response
     response->SID = UDS_RESPONSE_INPUT_OUTPUT_CONTROL;
     response->dataIdentifier = request->dataIdentifier;
 
-    // Remplir le tableau de statut de contrôle avec les valeurs actuelles ou désirées
+    // Fill the control status array with the current or desired values
     memcpy(response->controlStatusRecord, request->controlState, sizeof(request->controlState));
 
-    // Envoyer la réponse positive
+    // Send the positive response
     send_positive_response_input_output_control_by_identifier(request->dataIdentifier, request->controlOptionRecord, response->controlStatusRecord);
 }
 
-// Fonction pour envoyer une réponse positive
+// Function to send a positive response
 void send_positive_response_input_output_control_by_identifier(uint16_t dataIdentifier, uint8_t controlOptionRecord, uint8_t *controlStatusRecord) {
     IOControlResponse_t response;
 
     response.SID = UDS_RESPONSE_INPUT_OUTPUT_CONTROL;
     response.dataIdentifier = dataIdentifier;
 
-    // Copie des états de contrôle dans la réponse
+    // Copy control states into the response
     memcpy(response.controlStatusRecord, controlStatusRecord, sizeof(response.controlStatusRecord));
 
-    // Envoi du message via CAN
+    // Send the message via CAN
     send_can_message((uint8_t*)&response, sizeof(response));
     // send_uart_message((uint8_t*)&response, sizeof(response));
 }
 
 
-// Fonction pour envoyer une réponse négative
+// Function to send a negative response
 void send_negative_response_input_output_control_by_identifier(uint8_t nrc) {
-    // Envoi d'un message d'erreur par CAN
-    // Exemple : send_can_message(&nrc, sizeof(nrc));
+    // Send an error message via CAN
+    // Example: send_can_message(&nrc, sizeof(nrc));
     uint8_t response[2];
-    response[0] = UDS_RESPONSE_INPUT_OUTPUT_CONTROL; // SID de réponse
+    response[0] = UDS_RESPONSE_INPUT_OUTPUT_CONTROL; // Response SID
     response[1] = nrc; // NRC
 
     send_can_message(response, sizeof(response));
     // send_uart_message(response, sizeof(response));
 }
 
-// Fonction pour gérer la réponse au service
+// Function to handle the response to the service
 void handle_input_output_control_response(IOControlResponse_t *response) {
-    // Logique pour traiter la réponse si nécessaire
-    // Exemple : afficher l'état de contrôle reçu
+    // Logic to process the response if necessary
+    // Example: display the received control state
 }
 
 

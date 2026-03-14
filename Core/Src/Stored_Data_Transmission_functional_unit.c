@@ -10,106 +10,106 @@
 
 
 /************************************************ClearDiagnosticInformation*************************************************/
-// Fonction principale pour ClearDiagnosticInformation
+// Main function for ClearDiagnosticInformation
 void uds_clear_diagnostic_information(uint8_t* data, uint8_t data_length) {
-    // V�rifier la longueur du message (SID + groupOfDTC = 4 octets)
+    // Check the message length (SID + groupOfDTC = 4 bytes)
     if (data_length != 4) {
         send_negative_response_clear_diagnostic_information(NRC_INCORRECT_MESSAGE_LENGTH);
         return;
     }
 
-    // Extraire le groupOfDTC (3 octets)
+    // Extract groupOfDTC (3 bytes)
     uint32_t groupOfDTC = (data[1] << 16) | (data[2] << 8) | data[3];
 
-    // V�rifier si le groupOfDTC est support�
+    // Check if groupOfDTC is supported
     if (!is_group_of_dtc_supported(groupOfDTC)) {
         send_negative_response_clear_diagnostic_information(NRC_REQUEST_OUT_OF_RANGE);
         return;
     }
 
-    // V�rifier si les conditions pour effacer les DTC sont correctes
+    // Check if the conditions for clearing DTCs are correct
     if (!are_conditions_correct_for_dtc_clear()) {
         send_negative_response_clear_diagnostic_information(NRC_CONDITIONS_NOT_CORRECT);
         return;
     }
 
-    // Effacer les informations diagnostiques pour le groupOfDTC
+    // Clear diagnostic information for the groupOfDTC
     if (!clear_diagnostic_information(groupOfDTC)) {
         send_negative_response_clear_diagnostic_information(NRC_GENERAL_PROGRAMMING_FAILURE);
         return;
     }
 
-    // Si tout est correct, envoyer une r�ponse positive
+    // If everything is correct, send a positive response
     send_positive_response_clear_diagnostic_information();
 }
 
-// V�rifier si le groupOfDTC est support�
+// Check if groupOfDTC is supported
 bool is_group_of_dtc_supported(uint32_t groupOfDTC) {
-    // Impl�menter la logique pour v�rifier si le groupOfDTC est support�
-    // Par exemple, supposons que nous supportons uniquement certains groupes de DTC
+    // Implement logic to check if groupOfDTC is supported
+    // For example, suppose we only support certain DTC groups
     switch (groupOfDTC) {
-        case 0x000000:  // Exemples de groupes de DTC
-        case 0x010000:  // Groupe Powertrain
-        case 0x020000:  // Groupe Chassis
-        case 0x030000:  // Groupe Body
+        case 0x000000:  // Example DTC groups
+        case 0x010000:  // Powertrain group
+        case 0x020000:  // Chassis group
+        case 0x030000:  // Body group
             return true;
         default:
             return false;
     }
 }
 
-// V�rifier si les conditions pour effacer les DTC sont correctes
+// Check if the conditions for clearing DTCs are correct
 bool are_conditions_correct_for_dtc_clear(void) {
-    // Impl�menter les v�rifications sp�cifiques, par exemple :
-    // - Le v�hicule est-il dans un mode qui permet l'effacement des DTC ?
-    // - La session diagnostique actuelle est-elle correcte ?
+    // Implement specific checks, for example:
+    // - Is the vehicle in a mode that allows DTC clearing?
+    // - Is the current diagnostic session correct?
 
     if (uds_session.current_session == UDS_SESSION_DEFAULT) {
-        return false;  // L'effacement n'est pas autoris� dans la session par d�faut
+        return false;  // Clearing is not allowed in the default session
     }
-    // Ajoutez d'autres v�rifications selon les besoins (�tat moteur, etc.)
+    // Add other checks as needed (engine state, etc.)
 
-    return true;  // Toutes les conditions sont correctes
+    return true;  // All conditions are correct
 }
 
-// Effacer les informations diagnostiques pour le groupOfDTC sp�cifi�
+// Clear diagnostic information for the specified groupOfDTC
 bool clear_diagnostic_information(uint32_t groupOfDTC) {
-    // Impl�menter la logique pour effacer les informations DTC
-    // Ici, nous simulons simplement l'effacement, mais dans un vrai syst�me,
-    // cela inclurait des op�rations sur la m�moire et des bases de donn�es de DTC.
+    // Implement logic to clear DTC information
+    // Here, we simply simulate clearing, but in a real system,
+    // this would include memory operations and DTC database handling.
 
-    // Exemple : Supposons que l'effacement r�ussit toujours pour cette d�monstration
+    // Example: Suppose clearing always succeeds for this demonstration
     return true;
 
-    // En cas d'�chec (par exemple, �chec d'�criture en m�moire), renvoyer false
+    // In case of failure (e.g., memory write failure), return false
 }
 
-// Envoyer une r�ponse positive apr�s effacement r�ussi
+// Send a positive response after successful clearing
 void send_positive_response_clear_diagnostic_information(void) {
     uint8_t response[1];
-    response[0] = UDS_CLEAR_DIAGNOSTIC_INFORMATION + 0x40;  // SID de r�ponse positive (0x14 + 0x40 = 0x54)
-    send_can_message(response, 1);  // Envoyer la r�ponse sur le bus CAN
+    response[0] = UDS_CLEAR_DIAGNOSTIC_INFORMATION + 0x40;  // Positive response SID (0x14 + 0x40 = 0x54)
+    send_can_message(response, 1);  // Send the response on the CAN bus
     // send_uart_message(response, 1);
 }
 
-// Envoyer une r�ponse n�gative en cas d'erreur
+// Send a negative response in case of error
 void send_negative_response_clear_diagnostic_information(uint8_t nrc) {
     uint8_t response[3];
-    response[0] = UDS_NEGATIVE_RESPONSE;  // SID pour une r�ponse n�gative
-    response[1] = UDS_CLEAR_DIAGNOSTIC_INFORMATION;  // SID de ClearDiagnosticInformation (0x14)
-    response[2] = nrc;  // Code de r�ponse n�gative (NRC)
-    send_can_message(response, 3);  // Envoyer la r�ponse sur le bus CAN
+    response[0] = UDS_NEGATIVE_RESPONSE;  // SID for a negative response
+    response[1] = UDS_CLEAR_DIAGNOSTIC_INFORMATION;  // SID of ClearDiagnosticInformation (0x14)
+    response[2] = nrc;  // Negative response code (NRC)
+    send_can_message(response, 3);  // Send the response on the CAN bus
     // send_uart_message(response, 3);
 }
 
 
 /************************************************read_dtc_information*******************************************************/
-DTC_Record stored_dtc_list[MAX_DTC_COUNT];  // Liste des DTC stock�s
+DTC_Record stored_dtc_list[MAX_DTC_COUNT];  // List of stored DTCs
 DTC_Record mirror_dtc_list[MAX_DTC_COUNT];
 DTC_Record user_defined_memory_list[MAX_DTC_COUNT];
 
 
-// Fonction principale du service ReadDTCInformation
+// Main function of the ReadDTCInformation service
 void uds_read_dtc_information(uint8_t sub_function, uint8_t* data, uint8_t data_length) {
     switch (sub_function) {
         case REPORT_NUMBER_OF_DTC_BY_STATUS_MASK:
@@ -200,47 +200,47 @@ void uds_read_dtc_information(uint8_t sub_function, uint8_t* data, uint8_t data_
 }
 
 void send_positive_response_read_dtc_information(uint8_t sub_function, DTC_Record* dtcRecords, uint8_t dtcCount) {
-    // Limiter la taille maximale de la r�ponse � la taille d'un message CAN (par exemple, 8 octets)
-    uint8_t response[8];  // Tableau de r�ponse limit� � 8 octets
+    // Limit the maximum size of the response to the size of a CAN message (e.g., 8 bytes)
+    uint8_t response[8];  // Array of response data limited to 8 bytes
     uint8_t index = 0;
 
-    // Champ 1 : SID pour ReadDTCInformation
-    response[index++] = 0x59;  // SID pour ReadDTCInformation (r�ponse positive)
+    // Field 1: SID for ReadDTCInformation
+    response[index++] = 0x59;  // SID for ReadDTCInformation (positive response)
 
-    // Champ 2 : Type de rapport (sub_function)
+    // Field 2: Type of report (sub_function)
     response[index++] = sub_function;
 
     switch (sub_function) {
         case REPORT_NUMBER_OF_DTC_BY_STATUS_MASK:
         case REPORT_NUMBER_OF_DTC_BY_SEVERITY_MASK:
-            // Champs 3 : DTCStatusAvailabilityMask
+            // Fields 3: DTCStatusAvailabilityMask
             response[index++] = get_dtc_status_availability_mask();
 
-            // Champs 4 : Nombre de DTCs
-            response[index++] = (dtcCount >> 8) & 0xFF;  // Octet �lev� du nombre de DTCs
-            response[index++] = dtcCount & 0xFF;         // Octet bas du nombre de DTCs
+            // Fields 4: Number of DTCs
+            response[index++] = (dtcCount >> 8) & 0xFF;  // Octet high of the DTC count
+            response[index++] = dtcCount & 0xFF;         // Octet low of the DTC count
             break;
 
         case REPORT_DTC_BY_STATUS_MASK:
         case REPORT_SUPPORTED_DTC:
         case REPORT_FIRST_TEST_FAILED_DTC:
-            // Ajouter les informations sur chaque DTC, envoyer en plusieurs messages si n�cessaire
+            // Add information about each DTC, send in multiple messages if necessary
             for (uint8_t i = 0; i < dtcCount; i++) {
-                index = 2;  // R�initialiser l'index apr�s SID et sous-fonction pour chaque nouveau message
+                index = 2;  // Reset index after SID and sub-function for each new message
 
-                // Champs DTC
-                response[index++] = (dtcRecords[i].dtcNumber >> 16) & 0xFF;  // Octet sup�rieur du DTC
-                response[index++] = (dtcRecords[i].dtcNumber >> 8) & 0xFF;   // Octet du milieu
-                response[index++] = dtcRecords[i].dtcNumber & 0xFF;          // Octet inf�rieur
-                response[index++] = dtcRecords[i].status;                    // Statut du DTC
+                // Fields DTC
+                response[index++] = (dtcRecords[i].dtcNumber >> 16) & 0xFF;  // Octet high of the DTC
+                response[index++] = (dtcRecords[i].dtcNumber >> 8) & 0xFF;   // Octet middle of the DTC
+                response[index++] = dtcRecords[i].dtcNumber & 0xFF;          // Octet low of the DTC
+                response[index++] = dtcRecords[i].status;                    // Status of the DTC
 
-                // Si la r�ponse est compl�te (7 octets max pour un message CAN), envoyer le message
+                // If the response is complete (7 bytes max for a CAN message), send the message
                 send_can_message(response, index);
 
-                // R�initialiser le tableau `response` pour le prochain DTC
+                // Reset the response array for the next DTC
                 index = 0;
             }
-            return;  // Tous les messages ont �t� envoy�s
+            return;  // All messages have been sent
             break;
 
         default:
@@ -248,7 +248,7 @@ void send_positive_response_read_dtc_information(uint8_t sub_function, DTC_Recor
             return;
     }
 
-    // Envoi du message si tous les octets tiennent dans un seul message CAN
+    // Send the message if all bytes fit in a single CAN message
     send_can_message(response, index);
     // send_uart_message(response, 3);
 }
@@ -256,7 +256,7 @@ void send_positive_response_read_dtc_information(uint8_t sub_function, DTC_Recor
 
 
 
-// Envoi d'une r�ponse n�gative pour ReadDTCInformation
+// Send a negative response for ReadDTCInformation
 void send_negative_response_read_dtc_information(uint8_t sub_function, uint8_t nrc) {
     uint8_t response[3];
     response[0] = 0x7F; // Negative Response SID
@@ -266,85 +266,85 @@ void send_negative_response_read_dtc_information(uint8_t sub_function, uint8_t n
     // send_uart_message(response, 3);
 }
 
-// Impl�mentation des sous-fonctions ReadDTCInformation
+// Implementation of ReadDTCInformation sub-functions
 void report_number_of_dtc_by_status_mask(uint8_t* data, uint8_t data_length) {
-    // V�rifier la longueur des donn�es re�ues
+    // Check the length of the received data
     if (data_length != 1) {
         send_negative_response_read_dtc_information(REPORT_NUMBER_OF_DTC_BY_STATUS_MASK, NRC_INCORRECT_MESSAGE_LENGTH);
         return;
     }
 
-    uint8_t status_mask = data[0];  // Le masque de statut est envoy� en premier
-    uint16_t dtc_count = 0;         // Compteur de DTC
+    uint8_t status_mask = data[0];  // The status mask is sent first
+    uint16_t dtc_count = 0;         // Counter for DTCs
     uint8_t dtc_status_availability_mask = get_dtc_status_availability_mask();
     uint8_t dtc_format_identifier = get_dtc_format_identifier();
 
-    // Compter les DTC qui correspondent au masque de statut
+    // Count the number of DTCs that correspond to the status mask
     for (uint8_t i = 0; i < MAX_DTC_COUNT; i++) {
         if ((stored_dtc_list[i].status & status_mask) != 0) {
             dtc_count++;
         }
     }
 
-    // Si aucun DTC n'a �t� trouv�, renvoyer un NRC (aucune condition remplie)
+    // If no DTCs are found, send an NRC (no conditions met)
     if (dtc_count == 0) {
         send_negative_response_read_dtc_information(REPORT_NUMBER_OF_DTC_BY_STATUS_MASK, NRC_CONDITIONS_NOT_CORRECT);
         return;
     }
 
-    // Allouer dynamiquement la m�moire pour la r�ponse (4 octets)
+    // Dynamically allocate memory for the response (4 bytes)
     uint8_t* response = (uint8_t*)malloc(4 * sizeof(uint8_t));
     if (response == NULL) {
-        // Si l'allocation �choue, g�rer l'erreur
+        // If allocation fails, handle the error
         Error_Handler();
         return;
     }
 
-    // Cr�er la r�ponse avec le masque de disponibilit� et l'identifiant du format de DTC
+    // Create the response with the availability mask and the format identifier
     response[0] = dtc_status_availability_mask;
     response[1] = dtc_format_identifier;
-    response[2] = (dtc_count >> 8) & 0xFF;  // Octet de poids fort du compteur de DTC
-    response[3] = dtc_count & 0xFF;         // Octet de poids faible du compteur de DTC
+    response[2] = (dtc_count >> 8) & 0xFF;  // Octet high of the DTC count
+    response[3] = dtc_count & 0xFF;         // Octet low of the DTC count
 
-    // Envoyer la r�ponse positive au client via le CAN (ou autre protocole de communication)
-    send_can_message(response, 4);  // Utiliser send_can_message pour envoyer la r�ponse sous forme de tableau d'octets
+    // Send the response positive to the client via CAN (or another communication protocol)
+    send_can_message(response, 4);  // Use send_can_message to send the response as an array of bytes
     // send_uart_message(response, 4);
-    // Lib�rer la m�moire allou�e dynamiquement
+    // Free the dynamically allocated memory
     free(response);
 }
 
 void report_dtc_by_status_mask(uint8_t* data, uint8_t data_length) {
-    // V�rifier la longueur des donn�es re�ues
+    // Check the length of the received data
     if (data_length != 1) {
         send_negative_response_read_dtc_information(REPORT_DTC_BY_STATUS_MASK, NRC_INCORRECT_MESSAGE_LENGTH);
         return;
     }
 
-    uint8_t status_mask = data[0];  // Le masque de statut est envoy� en premier
-    uint16_t dtc_count = 0;         // Compteur de DTC
+    uint8_t status_mask = data[0];  // The status mask is sent first
+    uint16_t dtc_count = 0;         // Counter for DTCs
 
-    // Compter le nombre de DTC correspondant au masque de statut
+    // Count the number of DTCs corresponding to the status mask
     for (uint8_t i = 0; i < MAX_DTC_COUNT; i++) {
         if ((stored_dtc_list[i].status & status_mask) != 0) {
             dtc_count++;
         }
     }
 
-    // Si aucun DTC n'a �t� trouv�, renvoyer un NRC (aucune condition remplie)
+    // If no DTCs are found, send an NRC (no conditions met)
     if (dtc_count == 0) {
         send_negative_response_read_dtc_information(REPORT_DTC_BY_STATUS_MASK, NRC_CONDITIONS_NOT_CORRECT);
         return;
     }
 
-    // Allouer dynamiquement de la m�moire pour les DTC_Record
+    // Dynamically allocate memory for the DTC records
     DTC_Record* dtc_records = (DTC_Record*)malloc(dtc_count * sizeof(DTC_Record));
     if (dtc_records == NULL) {
-        // Si l'allocation �choue, g�rer l'erreur
+        // If allocation fails, handle the error
         Error_Handler();
         return;
     }
 
-    // Remplir les enregistrements DTC
+    // Fill the DTC records
     uint16_t index = 0;
     for (uint8_t i = 0; i < MAX_DTC_COUNT; i++) {
         if ((stored_dtc_list[i].status & status_mask) != 0 && index < dtc_count) {
@@ -355,95 +355,95 @@ void report_dtc_by_status_mask(uint8_t* data, uint8_t data_length) {
         }
     }
 
-    // Envoyer la r�ponse positive avec les DTC_Record
+    // Send the response positive with the DTC records
     send_positive_response_read_dtc_information(REPORT_DTC_BY_STATUS_MASK, dtc_records, dtc_count);
 
-    // Lib�rer la m�moire allou�e dynamiquement
+    // Free the dynamically allocated memory
     free(dtc_records);
 }
 
 
 
 void report_dtc_snapshot_identification(uint8_t* data, uint8_t data_length) {
-    // V�rifier la longueur des donn�es re�ues
-    if (data_length != 0) {  // Aucune donn�e n'est attendue pour ce service
+    // Check the length of the received data
+    if (data_length != 0) {  // No data is expected for this service
         send_negative_response_read_dtc_information(REPORT_DTC_SNAPSHOT_IDENTIFICATION, NRC_INCORRECT_MESSAGE_LENGTH);
         return;
     }
 
-    uint16_t dtc_count = 0;  // Compteur pour le nombre de DTC
-    uint16_t snapshot_count = 0;  // Compteur pour le nombre de snapshots
+    uint16_t dtc_count = 0;  // Counter for DTCs
+    uint16_t snapshot_count = 0;  // Counter for snapshots
 
-    // Compter le nombre de DTCs qui ont un snapshot associ�
+    // Count the number of DTCs that have a snapshot
     for (uint8_t i = 0; i < MAX_DTC_COUNT; i++) {
-        if (stored_dtc_list[i].snapshotDataLength > 0) {  // Un snapshot est pr�sent pour ce DTC
-            snapshot_count += stored_dtc_list[i].snapshotRecordNumber;  // Compter chaque occurrence
+        if (stored_dtc_list[i].snapshotDataLength > 0) {  // A snapshot is present for this DTC
+            snapshot_count += stored_dtc_list[i].snapshotRecordNumber;  // Count each occurrence
             dtc_count++;
         }
     }
 
-    // Si aucun snapshot n'est trouv�, renvoyer un NRC
+    // If no snapshot is found, send an NRC
     if (snapshot_count == 0) {
         send_negative_response_read_dtc_information(REPORT_DTC_SNAPSHOT_IDENTIFICATION, NRC_CONDITIONS_NOT_CORRECT);
         return;
     }
 
-    // Allouer dynamiquement de la m�moire pour les enregistrements DTC_Record
+    // Dynamically allocate memory for the DTC records
     DTC_Record* dtc_records = (DTC_Record*)malloc(snapshot_count * sizeof(DTC_Record));
     if (dtc_records == NULL) {
-        // Si l'allocation �choue, g�rer l'erreur
+        // If allocation fails, handle the error
         Error_Handler();
         return;
     }
 
-    // Remplir les enregistrements DTC_Record avec le num�ro DTC et le num�ro de snapshot
+    // Fill the DTC records with the DTC number and the snapshot number
     uint16_t index = 0;
     for (uint8_t i = 0; i < MAX_DTC_COUNT; i++) {
         if (stored_dtc_list[i].snapshotDataLength > 0) {
-            // Pour chaque occurrence de snapshot pour un DTC donn�
+            // For each snapshot occurrence for a DTC
             for (uint8_t j = 0; j < stored_dtc_list[i].snapshotRecordNumber; j++) {
                 dtc_records[index].dtcNumber = stored_dtc_list[i].dtcNumber;
-                dtc_records[index].snapshotRecordNumber = j + 1;  // Num�rotation des snapshots
+                dtc_records[index].snapshotRecordNumber = j + 1;  // Snapshot numbering
                 index++;
             }
         }
     }
 
-    // Envoyer la r�ponse positive avec les enregistrements DTC_Record
+    // Send the positive response with the DTC records
     send_positive_response_read_dtc_information(REPORT_DTC_SNAPSHOT_IDENTIFICATION, dtc_records, snapshot_count);
 
-    // Lib�rer la m�moire allou�e dynamiquement
+    // Free the dynamically allocated memory
     free(dtc_records);
 }
 
 
 
 void report_dtc_snapshot_record_by_dtc_number(uint8_t* data, uint8_t data_length) {
-    // V�rifier la longueur des donn�es re�ues (DTCMaskRecord + SnapshotRecordNumber = 4 octets attendus)
+    // Check the length of the received data (DTCMaskRecord + SnapshotRecordNumber = 4 bytes expected)
     if (data_length != 4) {
         send_negative_response_read_dtc_information(REPORT_DTC_SNAPSHOT_RECORD_BY_DTC_NUMBER, NRC_INCORRECT_MESSAGE_LENGTH);
         return;
     }
 
-    // Extraire le num�ro de DTC depuis la requ�te du client (3 octets)
+    // Extract the DTC number from the client request (3 bytes)
     uint32_t dtc_mask_record = (data[0] << 16) | (data[1] << 8) | data[2];
-    uint8_t snapshot_record_number = data[3];  // Num�ro d'enregistrement du snapshot
+    uint8_t snapshot_record_number = data[3];  // Number of the snapshot
 
     uint8_t found = 0;
-    DTC_Record dtc_record;  // Pas d'allocation dynamique pour DTC_Record
+    DTC_Record dtc_record;  // No dynamic allocation for DTC_Record
 
-    // Parcourir la liste des DTCs pour trouver le DTC correspondant au masque demand�
+    // Browse the list of DTCs to find the DTC corresponding to the mask
     for (uint8_t i = 0; i < MAX_DTC_COUNT; i++) {
         if (stored_dtc_list[i].dtcNumber == dtc_mask_record) {
-            // Si un enregistrement de snapshot est trouv�
+            // If a snapshot is found
             if ((stored_dtc_list[i].snapshotRecordNumber >= snapshot_record_number && snapshot_record_number != 0xFF) || snapshot_record_number == 0xFF) {
                 dtc_record.dtcNumber = stored_dtc_list[i].dtcNumber;
                 dtc_record.status = stored_dtc_list[i].status;
                 dtc_record.snapshotRecordNumber = snapshot_record_number;
 
-                // Remplir les donn�es de snapshot
+                // Fill the snapshot data
                 for (uint8_t j = 0; j < stored_dtc_list[i].snapshotDataLength; j++) {
-                    dtc_record.snapshotData[j] = stored_dtc_list[i].snapshotData[j];  // Utiliser le tableau fixe
+                    dtc_record.snapshotData[j] = stored_dtc_list[i].snapshotData[j];  // Use the fixed array
                 }
                 dtc_record.snapshotDataLength = stored_dtc_list[i].snapshotDataLength;
                 found = 1;
@@ -452,20 +452,20 @@ void report_dtc_snapshot_record_by_dtc_number(uint8_t* data, uint8_t data_length
         }
     }
 
-    // Si aucun enregistrement n'est trouv�, renvoyer un NRC
+    // If no record is found, send an NRC
     if (!found) {
         send_negative_response_read_dtc_information(REPORT_DTC_SNAPSHOT_RECORD_BY_DTC_NUMBER, NRC_REQUEST_OUT_OF_RANGE);
         return;
     }
 
-    // Envoyer une r�ponse positive avec l'enregistrement DTC et le snapshot correspondant
+    // Send a positive response with the DTC and the corresponding snapshot
     send_positive_response_read_dtc_information(REPORT_DTC_SNAPSHOT_RECORD_BY_DTC_NUMBER, &dtc_record, 1);
 }
 
 
 
 void report_dtc_stored_data_by_record_number(uint8_t* data, uint8_t data_length) {
-    // V�rifier la longueur des donn�es re�ues
+    // Check the length of the received data
     if (data_length != 2) {
         send_negative_response_read_dtc_information(REPORT_DTC_STORED_DATA_BY_RECORD_NUMBER, NRC_INCORRECT_MESSAGE_LENGTH);
         return;
@@ -474,16 +474,16 @@ void report_dtc_stored_data_by_record_number(uint8_t* data, uint8_t data_length)
     uint16_t dtc_stored_data_record_number = (data[0] << 8) | data[1];
 
     uint8_t found = 0;
-    DTC_Record dtc_record;  // Pas d'allocation dynamique ici
+    DTC_Record dtc_record;  // No dynamic allocation here
 
-    // Parcourir la liste des DTCs pour trouver l'enregistrement correspondant au num�ro fourni
+    // Browse the list of DTCs to find the record corresponding to the provided number
     for (uint8_t i = 0; i < MAX_DTC_COUNT; i++) {
         if (stored_dtc_list[i].storedDataRecordNumber == dtc_stored_data_record_number || dtc_stored_data_record_number == 0xFF) {
             dtc_record.dtcNumber = stored_dtc_list[i].dtcNumber;
             dtc_record.status = stored_dtc_list[i].status;
             dtc_record.storedDataRecordNumber = stored_dtc_list[i].storedDataRecordNumber;
 
-            // Copie les donn�es dans le tableau de taille fixe
+            // Copy the data into the fixed array
             for (uint8_t j = 0; j < stored_dtc_list[i].storedDataLength; j++) {
                 dtc_record.snapshotData[j] = stored_dtc_list[i].storedData[j];
             }
@@ -493,42 +493,42 @@ void report_dtc_stored_data_by_record_number(uint8_t* data, uint8_t data_length)
         }
     }
 
-    // Si aucun enregistrement n'est trouv�
+    // If no record is found
     if (!found) {
         send_negative_response_read_dtc_information(REPORT_DTC_STORED_DATA_BY_RECORD_NUMBER, NRC_REQUEST_OUT_OF_RANGE);
         return;
     }
 
-    // Envoyer une r�ponse positive avec les donn�es trouv�es
+    // Send a positive response with the data found
     send_positive_response_read_dtc_information(REPORT_DTC_STORED_DATA_BY_RECORD_NUMBER, &dtc_record, 1);
 }
 
 
 
 void report_dtc_ext_data_record_by_dtc_number(uint8_t* data, uint8_t data_length) {
-    // V�rifier la longueur des donn�es re�ues (DTCMaskRecord + ExtDataRecordNumber = 4 octets attendus)
+    // Check the length of the received data (DTCMaskRecord + ExtDataRecordNumber = 4 bytes expected)
     if (data_length != 4) {
         send_negative_response_read_dtc_information(REPORT_DTC_EXT_DATA_RECORD_BY_DTC_NUMBER, NRC_INCORRECT_MESSAGE_LENGTH);
         return;
     }
 
-    // Extraire le num�ro de DTC depuis la requ�te du client (3 octets)
+    // Extract the DTC number from the client request (3 bytes)
     uint32_t dtc_mask_record = (data[0] << 16) | (data[1] << 8) | data[2];
-    uint8_t ext_data_record_number = data[3];  // Num�ro d'enregistrement des donn�es �tendues
+    uint8_t ext_data_record_number = data[3];  // Extended data record number
 
     uint8_t found = 0;
     DTC_Record dtc_record;
 
-    // Parcourir la liste des DTCs pour trouver le DTC correspondant au masque et au num�ro de donn�es �tendues
+    // Browse the list of DTCs to find the DTC matching the mask and the extended data record number
     for (uint8_t i = 0; i < MAX_DTC_COUNT; i++) {
         if (stored_dtc_list[i].dtcNumber == dtc_mask_record) {
-            // Si un enregistrement de donn�es �tendues est trouv�
+            // If an extended data record is found
             if (stored_dtc_list[i].storedDataRecordNumber == ext_data_record_number || ext_data_record_number == 0xFF) {
                 dtc_record.dtcNumber = stored_dtc_list[i].dtcNumber;
                 dtc_record.status = stored_dtc_list[i].status;
                 dtc_record.storedDataRecordNumber = stored_dtc_list[i].storedDataRecordNumber;
 
-                // Copier les donn�es �tendues directement dans le tableau `snapshotData`
+                // Copy the extended data directly into the `snapshotData` array
                 dtc_record.snapshotDataLength = stored_dtc_list[i].storedDataLength;
                 if (dtc_record.snapshotDataLength > MAX_DTC_EXT_DATA_RECORD_SIZE) {
                     send_negative_response_read_dtc_information(REPORT_DTC_EXT_DATA_RECORD_BY_DTC_NUMBER, NRC_REQUEST_OUT_OF_RANGE);
@@ -544,20 +544,20 @@ void report_dtc_ext_data_record_by_dtc_number(uint8_t* data, uint8_t data_length
         }
     }
 
-    // Si aucun enregistrement n'est trouv�, renvoyer un NRC
+    // If no record is found, send an NRC
     if (!found) {
         send_negative_response_read_dtc_information(REPORT_DTC_EXT_DATA_RECORD_BY_DTC_NUMBER, NRC_REQUEST_OUT_OF_RANGE);
         return;
     }
 
-    // Envoyer une r�ponse positive avec l'enregistrement DTC et les donn�es �tendues correspondantes
+    // Send a positive response with the DTC and the corresponding extended data
     send_positive_response_read_dtc_information(REPORT_DTC_EXT_DATA_RECORD_BY_DTC_NUMBER, &dtc_record, 1);
 }
 
 
 
 void report_number_of_dtc_by_severity_mask(uint8_t* data, uint8_t data_length) {
-    // V�rifier que la longueur des donn�es est correcte (statut + gravit� = 2 octets attendus)
+    // Check that the length of the data is correct (status + severity = 2 bytes expected)
     if (data_length != 2) {
         send_negative_response_read_dtc_information(REPORT_NUMBER_OF_DTC_BY_SEVERITY_MASK, NRC_INCORRECT_MESSAGE_LENGTH);
         return;
@@ -567,7 +567,7 @@ void report_number_of_dtc_by_severity_mask(uint8_t* data, uint8_t data_length) {
     uint8_t dtc_severity_mask = data[1];
     uint16_t dtc_count = 0;
 
-    // Parcourir tous les DTCs et compter ceux qui correspondent au masque de statut et de gravit�
+    // Browse all DTCs and count those that correspond to the status and severity mask
     for (uint8_t i = 0; i < MAX_DTC_COUNT; i++) {
         if (((stored_dtc_list[i].status & dtc_status_mask) != 0) &&
             ((stored_dtc_list[i].severity & dtc_severity_mask) != 0)) {
@@ -575,13 +575,13 @@ void report_number_of_dtc_by_severity_mask(uint8_t* data, uint8_t data_length) {
         }
     }
 
-    // Cr�er la r�ponse
+    // Create the response
     uint8_t response[3];
     response[0] = get_dtc_status_availability_mask();
-    response[1] = (dtc_count >> 8) & 0xFF;  // Octet de poids fort
-    response[2] = dtc_count & 0xFF;         // Octet de poids faible
+    response[1] = (dtc_count >> 8) & 0xFF;  // Octet high of the DTC count
+    response[2] = dtc_count & 0xFF;         // Octet low of the DTC count
 
-    // Envoyer la r�ponse au client
+    // Send the response to the client
     send_positive_response_read_dtc_information(REPORT_NUMBER_OF_DTC_BY_SEVERITY_MASK, (DTC_Record*)response, 0);
 }
 
@@ -589,7 +589,7 @@ void report_number_of_dtc_by_severity_mask(uint8_t* data, uint8_t data_length) {
 
 
 void report_dtc_by_severity_mask_record(uint8_t* data, uint8_t data_length) {
-    // V�rifier que la longueur des donn�es est correcte (statut + gravit� = 2 octets attendus)
+    // Check that the length of the data is correct (status + severity = 2 bytes expected)
     if (data_length != 2) {
         send_negative_response_read_dtc_information(REPORT_DTC_BY_SEVERITY_MASK_RECORD, NRC_INCORRECT_MESSAGE_LENGTH);
         return;
@@ -599,14 +599,14 @@ void report_dtc_by_severity_mask_record(uint8_t* data, uint8_t data_length) {
     uint8_t dtc_severity_mask = data[1];
     uint8_t found_dtc_count = 0;
 
-    // Allouer dynamiquement de la m�moire pour les enregistrements DTC
+    // Dynamically allocate memory for the DTC records
     DTC_Record* dtc_records = (DTC_Record*)malloc(MAX_DTC_COUNT * sizeof(DTC_Record));
     if (dtc_records == NULL) {
         Error_Handler();
         return;
     }
 
-    // Parcourir tous les DTCs et ajouter ceux qui correspondent au masque de statut et de gravit�
+    // Browse all DTCs and add those that correspond to the status and severity mask
     for (uint8_t i = 0; i < MAX_DTC_COUNT; i++) {
         if (((stored_dtc_list[i].status & dtc_status_mask) != 0) &&
             ((stored_dtc_list[i].severity & dtc_severity_mask) != 0)) {
@@ -615,35 +615,35 @@ void report_dtc_by_severity_mask_record(uint8_t* data, uint8_t data_length) {
         }
     }
 
-    // Si aucun DTC n'a �t� trouv�, envoyer un NRC
+    // If no DTC is found, send an NRC
     if (found_dtc_count == 0) {
         free(dtc_records);
         send_negative_response_read_dtc_information(REPORT_DTC_BY_SEVERITY_MASK_RECORD, NRC_CONDITIONS_NOT_CORRECT);
         return;
     }
 
-    // Envoyer la r�ponse avec les enregistrements DTC correspondants
+    // Send the response with the corresponding DTC records
     send_positive_response_read_dtc_information(REPORT_DTC_BY_SEVERITY_MASK_RECORD, dtc_records, found_dtc_count);
 
-    // Lib�rer la m�moire allou�e
+    // Free the dynamically allocated memory
     free(dtc_records);
 }
 
 
 
 void report_severity_information_of_dtc(uint8_t* data, uint8_t data_length) {
-    // V�rifier que la longueur des donn�es est correcte (3 octets pour le num�ro de DTC)
+    // Check that the length of the data is correct (3 bytes for the DTC number)
     if (data_length != 3) {
         send_negative_response_read_dtc_information(REPORT_SEVERITY_INFORMATION_OF_DTC, NRC_INCORRECT_MESSAGE_LENGTH);
         return;
     }
 
-    // Extraire le num�ro de DTC depuis la requ�te du client (3 octets)
+    // Extract the DTC number from the client request (3 bytes)
     uint32_t dtc_mask_record = (data[0] << 16) | (data[1] << 8) | data[2];
     uint8_t found = 0;
     DTC_Record dtc_record;
 
-    // Parcourir tous les DTCs pour trouver celui qui correspond au DTCMaskRecord
+    // Browse all DTCs to find the one corresponding to the DTCMaskRecord
     for (uint8_t i = 0; i < MAX_DTC_COUNT; i++) {
         if (stored_dtc_list[i].dtcNumber == dtc_mask_record) {
             dtc_record = stored_dtc_list[i];
@@ -652,20 +652,20 @@ void report_severity_information_of_dtc(uint8_t* data, uint8_t data_length) {
         }
     }
 
-    // Si aucun DTC correspondant n'est trouv�, envoyer un NRC
+    // If no DTC corresponding is found, send an NRC
     if (!found) {
         send_negative_response_read_dtc_information(REPORT_SEVERITY_INFORMATION_OF_DTC, NRC_REQUEST_OUT_OF_RANGE);
         return;
     }
 
-    // Envoyer une r�ponse positive avec les informations de gravit� pour le DTC trouv�
+    // Send a positive response with the severity information for the found DTC
     send_positive_response_read_dtc_information(REPORT_SEVERITY_INFORMATION_OF_DTC, &dtc_record, 1);
 }
 
 
 
 void report_supported_dtc(uint8_t* data, uint8_t data_length) {
-    // Aucune donn�e suppl�mentaire n'est attendue
+    // No additional data is expected
     if (data_length != 0) {
         send_negative_response_read_dtc_information(REPORT_SUPPORTED_DTC, NRC_INCORRECT_MESSAGE_LENGTH);
         return;
@@ -673,14 +673,14 @@ void report_supported_dtc(uint8_t* data, uint8_t data_length) {
 
     uint8_t dtc_count = 0;
 
-    // Allouer dynamiquement la m�moire pour stocker les DTCs
+    // Dynamically allocate memory for storing the DTCs
     DTC_Record* dtc_records = (DTC_Record*)malloc(MAX_DTC_COUNT * sizeof(DTC_Record));
     if (dtc_records == NULL) {
         Error_Handler();
         return;
     }
 
-    // Parcourir les DTCs pour r�cup�rer tous ceux support�s
+    // Browse the DTCs to recover all those supported
     for (uint8_t i = 0; i < MAX_DTC_COUNT; i++) {
         if (stored_dtc_list[i].status != 0) {
             dtc_records[dtc_count] = stored_dtc_list[i];
@@ -688,17 +688,17 @@ void report_supported_dtc(uint8_t* data, uint8_t data_length) {
         }
     }
 
-    // Si aucun DTC n'a �t� trouv�, envoyer un NRC
+    // If no DTC is found, send an NRC
     if (dtc_count == 0) {
         free(dtc_records);
         send_negative_response_read_dtc_information(REPORT_SUPPORTED_DTC, NRC_CONDITIONS_NOT_CORRECT);
         return;
     }
 
-    // Envoyer les DTCs support�s
+    // Send the supported DTCs
     send_positive_response_read_dtc_information(REPORT_SUPPORTED_DTC, dtc_records, dtc_count);
 
-    // Lib�rer la m�moire
+    // Free the memory
     free(dtc_records);
 }
 
@@ -712,7 +712,7 @@ void report_first_test_failed_dtc(uint8_t* data, uint8_t data_length) {
     uint8_t found = 0;
     DTC_Record dtc_record;
 
-    // Parcourir les DTCs pour trouver le premier qui a �chou� un test
+    // Browse the DTCs to find the first one that failed a test
     for (uint8_t i = 0; i < MAX_DTC_COUNT; i++) {
         if (stored_dtc_list[i].status & DTC_TEST_FAILED) {
             dtc_record = stored_dtc_list[i];
@@ -721,13 +721,13 @@ void report_first_test_failed_dtc(uint8_t* data, uint8_t data_length) {
         }
     }
 
-    // Si aucun DTC n'a �t� trouv�, envoyer un NRC
+    // If no DTC is found, send an NRC
     if (!found) {
         send_negative_response_read_dtc_information(REPORT_FIRST_TEST_FAILED_DTC, NRC_CONDITIONS_NOT_CORRECT);
         return;
     }
 
-    // Envoyer la r�ponse avec le premier DTC ayant �chou�
+    // Send the response with the first DTC that failed
     send_positive_response_read_dtc_information(REPORT_FIRST_TEST_FAILED_DTC, &dtc_record, 1);
 }
 
@@ -742,7 +742,7 @@ void report_first_confirmed_dtc(uint8_t* data, uint8_t data_length) {
     uint8_t found = 0;
     DTC_Record dtc_record;
 
-    // Parcourir les DTCs pour trouver le premier confirm�
+    // Browse the DTCs to find the first confirmed
     for (uint8_t i = 0; i < MAX_DTC_COUNT; i++) {
         if (stored_dtc_list[i].status & DTC_CONFIRMED) {
             dtc_record = stored_dtc_list[i];
@@ -751,13 +751,13 @@ void report_first_confirmed_dtc(uint8_t* data, uint8_t data_length) {
         }
     }
 
-    // Si aucun DTC confirm� n'est trouv�, envoyer un NRC
+    // If no DTC confirmed is found, send an NRC
     if (!found) {
         send_negative_response_read_dtc_information(REPORT_FIRST_CONFIRMED_DTC, NRC_CONDITIONS_NOT_CORRECT);
         return;
     }
 
-    // Envoyer la r�ponse avec le premier DTC confirm�
+    // Send the response with the first DTC confirmed
     send_positive_response_read_dtc_information(REPORT_FIRST_CONFIRMED_DTC, &dtc_record, 1);
 }
 
@@ -776,7 +776,7 @@ void report_most_recent_test_failed_dtc(uint8_t* data, uint8_t data_length) {
         return;
     }
 
-    // Parcourir les DTCs pour trouver le plus r�cent ayant �chou�
+    // Browse the DTCs to find the most recent that failed
     for (int8_t i = MAX_DTC_COUNT - 1; i >= 0; i--) {
         if (stored_dtc_list[i].status & DTC_TEST_FAILED) {
             *dtc_record = stored_dtc_list[i];
@@ -785,14 +785,14 @@ void report_most_recent_test_failed_dtc(uint8_t* data, uint8_t data_length) {
         }
     }
 
-    // Si aucun DTC �chou� n'est trouv�, envoyer un NRC
+    // If no DTC failed is found, send an NRC
     if (!found) {
         free(dtc_record);
         send_negative_response_read_dtc_information(REPORT_MOST_RECENT_TEST_FAILED_DTC, NRC_CONDITIONS_NOT_CORRECT);
         return;
     }
 
-    // Envoyer la r�ponse avec le DTC le plus r�cent ayant �chou�
+    // Send the response with the most recent DTC that failed
     send_positive_response_read_dtc_information(REPORT_MOST_RECENT_TEST_FAILED_DTC, dtc_record, 1);
     free(dtc_record);
 }
@@ -812,7 +812,7 @@ void report_most_recent_confirmed_dtc(uint8_t* data, uint8_t data_length) {
         return;
     }
 
-    // Parcourir les DTCs pour trouver le plus r�cent confirm�
+    // Browse the DTCs to find the most recent confirmed
     for (int8_t i = MAX_DTC_COUNT - 1; i >= 0; i--) {
         if (stored_dtc_list[i].status & DTC_CONFIRMED) {
             *dtc_record = stored_dtc_list[i];
@@ -821,14 +821,14 @@ void report_most_recent_confirmed_dtc(uint8_t* data, uint8_t data_length) {
         }
     }
 
-    // Si aucun DTC confirm� n'est trouv�, envoyer un NRC
+    // If no DTC confirmed is found, send an NRC
     if (!found) {
         free(dtc_record);
         send_negative_response_read_dtc_information(REPORT_MOST_RECENT_CONFIRMED_DTC, NRC_CONDITIONS_NOT_CORRECT);
         return;
     }
 
-    // Envoyer la r�ponse avec le DTC le plus r�cent confirm�
+    // Send the response with the most recent DTC confirmed
     send_positive_response_read_dtc_information(REPORT_MOST_RECENT_CONFIRMED_DTC, dtc_record, 1);
     free(dtc_record);
 }
@@ -837,22 +837,22 @@ void report_most_recent_confirmed_dtc(uint8_t* data, uint8_t data_length) {
 
 
 void report_mirror_memory_dtc_by_status_mask(uint8_t* data, uint8_t data_length) {
-    if (data_length != 1) { // V�rifier si le masque de statut est fourni
+    if (data_length != 1) { // Check if the status mask is provided
         send_negative_response_read_dtc_information(REPORT_MIRROR_MEMORY_DTC_BY_STATUS_MASK, NRC_INCORRECT_MESSAGE_LENGTH);
         return;
     }
 
-    uint8_t status_mask = data[0]; // Masque de statut envoy� par le client
+    uint8_t status_mask = data[0]; // The status mask sent by the client
     uint8_t dtc_count = 0;
 
-    // Allouer dynamiquement de la m�moire pour les DTCs
+    // Dynamically allocate memory for the DTCs
     DTC_Record* dtc_records = (DTC_Record*)malloc(MAX_DTC_COUNT * sizeof(DTC_Record));
     if (dtc_records == NULL) {
         Error_Handler();
         return;
     }
 
-    // Parcourir les DTCs de la m�moire miroir et filtrer par le masque
+    // Browse the DTCs in the mirror memory and filter by the mask
     for (uint8_t i = 0; i < MAX_DTC_COUNT; i++) {
         if ((mirror_dtc_list[i].status & status_mask) != 0) {
             dtc_records[dtc_count] = mirror_dtc_list[i];
@@ -866,7 +866,7 @@ void report_mirror_memory_dtc_by_status_mask(uint8_t* data, uint8_t data_length)
         return;
     }
 
-    // Envoyer la r�ponse avec les DTCs de la m�moire miroir
+    // Send the response with the DTCs in the mirror memory
     send_positive_response_read_dtc_information(REPORT_MIRROR_MEMORY_DTC_BY_STATUS_MASK, dtc_records, dtc_count);
     free(dtc_records);
 }
@@ -879,14 +879,14 @@ void report_mirror_memory_dtc_ext_data_record(uint8_t* data, uint8_t data_length
         return;
     }
 
-    // Extraire le num�ro de DTC et d'enregistrement des donn�es �tendues
+    // Extract the DTC number and the record number of the extended data
     uint32_t dtc_mask_record = (data[0] << 16) | (data[1] << 8) | data[2];
     uint8_t ext_data_record_number = data[3];
 
     uint8_t found = 0;
     DTC_Record* dtc_record = NULL;
 
-    // Parcourir les DTCs dans la m�moire miroir
+    // Browse the DTCs in the mirror memory
     for (uint8_t i = 0; i < MAX_DTC_COUNT; i++) {
         if (mirror_dtc_list[i].dtcNumber == dtc_mask_record && mirror_dtc_list[i].storedDataRecordNumber == ext_data_record_number) {
             dtc_record = &mirror_dtc_list[i];
@@ -895,13 +895,13 @@ void report_mirror_memory_dtc_ext_data_record(uint8_t* data, uint8_t data_length
         }
     }
 
-    // Si aucun DTC n'est trouv�
+    // If no DTC is found
     if (!found) {
         send_negative_response_read_dtc_information(REPORT_MIRROR_MEMORY_DTC_EXT_DATA_RECORD, NRC_REQUEST_OUT_OF_RANGE);
         return;
     }
 
-    // Envoyer une r�ponse positive avec l'enregistrement DTC et les donn�es �tendues
+    // Send a positive response with the DTC and the extended data
     send_positive_response_read_dtc_information(REPORT_MIRROR_MEMORY_DTC_EXT_DATA_RECORD, dtc_record, 1);
 }
 
@@ -917,7 +917,7 @@ void report_number_of_mirror_memory_dtc_by_status_mask(uint8_t* data, uint8_t da
     uint8_t status_mask = data[0];
     uint16_t dtc_count = 0;
 
-    // Parcourir les DTCs pour compter ceux correspondant au masque de statut
+    // Browse the DTCs to count those corresponding to the status mask
     for (uint8_t i = 0; i < MAX_DTC_COUNT; i++) {
         if ((mirror_dtc_list[i].status & status_mask) != 0) {
             dtc_count++;
@@ -929,7 +929,7 @@ void report_number_of_mirror_memory_dtc_by_status_mask(uint8_t* data, uint8_t da
         return;
     }
 
-    // Pr�parer la r�ponse
+    // Prepare the response
     uint8_t response[4];
     response[0] = get_dtc_status_availability_mask();
     response[1] = get_dtc_format_identifier();
@@ -943,7 +943,7 @@ void report_number_of_mirror_memory_dtc_by_status_mask(uint8_t* data, uint8_t da
 
 
 void report_number_of_emissions_obd_dtc_by_status_mask(uint8_t* data, uint8_t data_length) {
-    if (data_length != 1) {  // Le masque de statut doit �tre d'une longueur de 1 octet
+    if (data_length != 1) {  // The status mask must be of length 1 byte
         send_negative_response_read_dtc_information(REPORT_NUMBER_OF_EMISSIONS_OBD_DTC_BY_STATUS_MASK, NRC_INCORRECT_MESSAGE_LENGTH);
         return;
     }
@@ -951,24 +951,24 @@ void report_number_of_emissions_obd_dtc_by_status_mask(uint8_t* data, uint8_t da
     uint8_t status_mask = data[0];
     uint16_t dtc_count = 0;
 
-    // Parcours de la liste des DTCs
+    // Browse the list of DTCs
     for (uint8_t i = 0; i < MAX_DTC_COUNT; i++) {
         if (stored_dtc_list[i].isEmissionRelated && (stored_dtc_list[i].status & status_mask) != 0) {
             dtc_count++;
         }
     }
 
-    // Cr�er un enregistrement de DTC pour envoyer la r�ponse
+    // Create a DTC record to send the response
     DTC_Record dtc_record;
-    dtc_record.dtcNumber = 0;  // ou un autre num�ro selon la d�finition de la structure
+    dtc_record.dtcNumber = 0;  // or another number according to the structure definition
     dtc_record.status = get_dtc_status_availability_mask();
     dtc_record.snapshotDataLength = 4;
     dtc_record.snapshotData[0] = get_dtc_status_availability_mask();
     dtc_record.snapshotData[1] = get_dtc_format_identifier();
-    dtc_record.snapshotData[2] = (dtc_count >> 8) & 0xFF;  // Octet de poids fort
-    dtc_record.snapshotData[3] = dtc_count & 0xFF;  // Octet de poids faible
+    dtc_record.snapshotData[2] = (dtc_count >> 8) & 0xFF;  // Octet high of the DTC count
+    dtc_record.snapshotData[3] = dtc_count & 0xFF;  // Octet low of the DTC count
 
-    // Envoyer la r�ponse positive
+    // Send the response positive
     send_positive_response_read_dtc_information(REPORT_NUMBER_OF_EMISSIONS_OBD_DTC_BY_STATUS_MASK, &dtc_record, 1);
 }
 
@@ -1066,7 +1066,7 @@ void report_dtc_with_permanent_status(uint8_t* data, uint8_t data_length) {
 
 
 void report_dtc_ext_data_record_by_record_number(uint8_t* data, uint8_t data_length) {
-    if (data_length != 2) {  // Le num�ro d'enregistrement des donn�es �tendues doit avoir 2 octets
+    if (data_length != 2) {  // The record number of the extended data must have 2 bytes
         send_negative_response_read_dtc_information(REPORT_DTC_EXT_DATA_RECORD_BY_RECORD_NUMBER, NRC_INCORRECT_MESSAGE_LENGTH);
         return;
     }
@@ -1124,20 +1124,20 @@ void report_user_def_memory_dtc_by_status_mask(uint8_t* data, uint8_t data_lengt
 
 
 void report_user_def_memory_dtc_snapshot_record(uint8_t* data, uint8_t data_length) {
-    // V�rification de la longueur attendue (DTCMaskRecord + SnapshotRecordNumber)
+    // Check the length of the received data (DTCMaskRecord + SnapshotRecordNumber)
     if (data_length != 4) {
         send_negative_response_read_dtc_information(REPORT_USER_DEF_MEMORY_DTC_SNAPSHOT_RECORD, NRC_INCORRECT_MESSAGE_LENGTH);
         return;
     }
 
-    // Extraction du DTCMaskRecord et du num�ro de snapshot
+    // Extract the DTCMaskRecord and the snapshot number
     uint32_t dtc_mask_record = (data[0] << 16) | (data[1] << 8) | data[2];
     uint8_t snapshot_record_number = data[3];
 
     uint8_t found = 0;
     DTC_Record dtc_record;
 
-    // Parcourir la m�moire utilisateur pour trouver le DTC correspondant
+    // Browse the user memory to find the DTC
     for (uint8_t i = 0; i < MAX_DTC_COUNT; i++) {
         if (user_defined_memory_list[i].dtcNumber == dtc_mask_record && user_defined_memory_list[i].snapshotRecordNumber == snapshot_record_number) {
             dtc_record = user_defined_memory_list[i];
@@ -1146,13 +1146,13 @@ void report_user_def_memory_dtc_snapshot_record(uint8_t* data, uint8_t data_leng
         }
     }
 
-    // Si aucun enregistrement n'est trouv�
+    // If no record is found
     if (!found) {
         send_negative_response_read_dtc_information(REPORT_USER_DEF_MEMORY_DTC_SNAPSHOT_RECORD, NRC_REQUEST_OUT_OF_RANGE);
         return;
     }
 
-    // Envoyer la r�ponse positive avec l'enregistrement snapshot
+    // Send the response positive with the snapshot
     send_positive_response_read_dtc_information(REPORT_USER_DEF_MEMORY_DTC_SNAPSHOT_RECORD, &dtc_record, 1);
 }
 
@@ -1160,20 +1160,20 @@ void report_user_def_memory_dtc_snapshot_record(uint8_t* data, uint8_t data_leng
 
 
 void report_user_def_memory_dtc_ext_data_record(uint8_t* data, uint8_t data_length) {
-    // V�rification de la longueur des donn�es re�ues
+    // Check the length of the received data
     if (data_length != 4) {
         send_negative_response_read_dtc_information(REPORT_USER_DEF_MEMORY_DTC_EXT_DATA_RECORD, NRC_INCORRECT_MESSAGE_LENGTH);
         return;
     }
 
-    // Extraction du DTCMaskRecord et du num�ro de l'enregistrement de donn�es �tendues
+    // Extract the DTCMaskRecord and the record number of the extended data
     uint32_t dtc_mask_record = (data[0] << 16) | (data[1] << 8) | data[2];
     uint8_t ext_data_record_number = data[3];
 
     uint8_t found = 0;
     DTC_Record dtc_record;
 
-    // Parcourir la m�moire utilisateur pour trouver le DTC correspondant
+    // Browse the user memory to find the DTC
     for (uint8_t i = 0; i < MAX_DTC_COUNT; i++) {
         if (user_defined_memory_list[i].dtcNumber == dtc_mask_record && user_defined_memory_list[i].storedDataRecordNumber == ext_data_record_number) {
             dtc_record = user_defined_memory_list[i];
@@ -1182,13 +1182,13 @@ void report_user_def_memory_dtc_ext_data_record(uint8_t* data, uint8_t data_leng
         }
     }
 
-    // Si aucun enregistrement n'est trouv�
+    // If no record is found
     if (!found) {
         send_negative_response_read_dtc_information(REPORT_USER_DEF_MEMORY_DTC_EXT_DATA_RECORD, NRC_REQUEST_OUT_OF_RANGE);
         return;
     }
 
-    // Envoyer la r�ponse positive avec les donn�es �tendues du DTC
+    // Send the response positive with the extended data
     send_positive_response_read_dtc_information(REPORT_USER_DEF_MEMORY_DTC_EXT_DATA_RECORD, &dtc_record, 1);
 }
 
@@ -1196,7 +1196,7 @@ void report_user_def_memory_dtc_ext_data_record(uint8_t* data, uint8_t data_leng
 
 
 void report_wwh_obd_dtc_by_mask_record(uint8_t* data, uint8_t data_length) {
-    if (data_length != 1) {  // Le masque de statut doit �tre d'une longueur de 1 octet
+    if (data_length != 1) {  // The status mask must be of length 1 byte
         send_negative_response_read_dtc_information(REPORT_WWH_OBD_DTC_BY_MASK_RECORD, NRC_INCORRECT_MESSAGE_LENGTH);
         return;
     }
@@ -1212,7 +1212,7 @@ void report_wwh_obd_dtc_by_mask_record(uint8_t* data, uint8_t data_length) {
 
     uint8_t record_count = 0;
 
-    // Parcourir la m�moire pour trouver les DTCs WWH-OBD
+    // Browse the memory to find the DTCs WWH-OBD
     for (uint8_t i = 0; i < MAX_DTC_COUNT; i++) {
         if (stored_dtc_list[i].isEmissionRelated && (stored_dtc_list[i].status & status_mask) != 0) {
             dtc_records[record_count++] = stored_dtc_list[i];
@@ -1220,7 +1220,7 @@ void report_wwh_obd_dtc_by_mask_record(uint8_t* data, uint8_t data_length) {
         }
     }
 
-    // Si aucun DTC n'est trouv�
+    // If no DTC is found
     if (!found) {
         send_negative_response_read_dtc_information(REPORT_WWH_OBD_DTC_BY_MASK_RECORD, NRC_CONDITIONS_NOT_CORRECT);
     } else {
@@ -1248,7 +1248,7 @@ void report_wwh_obd_dtc_with_permanent_status(uint8_t* data, uint8_t data_length
 
     uint8_t record_count = 0;
 
-    // Parcourir la m�moire pour trouver les DTCs WWH-OBD avec statut permanent
+    // Browse the memory to find the DTCs WWH-OBD with permanent status
     for (uint8_t i = 0; i < MAX_DTC_COUNT; i++) {
         if (stored_dtc_list[i].status & DTC_STATUS_PERMANENT) {
             dtc_records[record_count++] = stored_dtc_list[i];
@@ -1256,7 +1256,7 @@ void report_wwh_obd_dtc_with_permanent_status(uint8_t* data, uint8_t data_length
         }
     }
 
-    // Si aucun DTC n'est trouv�
+    // If no DTC is found
     if (!found) {
         send_negative_response_read_dtc_information(REPORT_WWH_OBD_DTC_WITH_PERMANENT_STATUS, NRC_CONDITIONS_NOT_CORRECT);
     } else {
@@ -1269,12 +1269,12 @@ void report_wwh_obd_dtc_with_permanent_status(uint8_t* data, uint8_t data_length
 
 
 uint8_t get_dtc_status_availability_mask() {
-    // Retourne un masque de statut DTC selon tes besoins
-    return 0xFF; // Exemple : Tous les statuts sont disponibles
+    // Return a DTC status availability mask according to your needs
+    return 0xFF; // Example: All statuses are available
 }
 uint8_t get_dtc_format_identifier() {
-    // Retourne un identifiant de format DTC (ex : SAE J2012, ISO, etc.)
-    return 0x01; // Exemple
+    // Return a DTC format identifier (e.g., SAE J2012, ISO, etc.)
+    return 0x01; // Example
 }
 
 

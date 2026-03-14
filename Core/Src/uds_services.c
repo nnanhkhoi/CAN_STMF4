@@ -4,8 +4,7 @@
 #include <stdlib.h>
 
 
-extern CAN_HandleTypeDef hcan1; // D�claration du handle CAN
-
+extern CAN_HandleTypeDef hcan1;
 
 
 
