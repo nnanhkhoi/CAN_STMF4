@@ -1,4 +1,4 @@
-name: C/C++ CI
+name: STM32 Build
 
 on:
   push:
@@ -8,16 +8,27 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
-    - name: configure
-      run: ./configure
-    - name: make
-      run: make
-    - name: make check
-      run: make check
-    - name: make distcheck
-      run: make distcheck
+
+    - name: Install ARM GCC toolchain
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc-arm-none-eabi libnewlib-arm-none-eabi
+
+    - name: Build firmware
+      run: make all
+
+    - name: Print binary size
+      run: arm-none-eabi-size build/CAN_NormalModeF4.elf
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: firmware
+        path: |
+          build/CAN_NormalModeF4.elf
+          build/CAN_NormalModeF4.hex
+          build/CAN_NormalModeF4.bin
