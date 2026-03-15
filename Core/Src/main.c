@@ -64,7 +64,6 @@ static void MX_CAN1_Init(void);
 static void MX_TIM6_Init(void);
 static void MX_USART3_UART_Init(void);
 /* USER CODE BEGIN PFP */
-static void UART_Send(const char *message);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/

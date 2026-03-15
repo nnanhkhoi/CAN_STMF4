@@ -127,7 +127,7 @@ bool is_service_allowed(uint8_t service_id) {
         case UDS_WRITE_DATA_BY_IDENTIFIER:
         case UDS_READ_SCALING_DATA_BY_IDENTIFIER:
         case UDS_DYNAMICAL_DEFINE_DATA_IDENTIFIER:
-            // These services require security access donc non autoris�s en session par d�faut
+            // These services require security access donc non autorises en session par defaut
             return uds_session.current_session != UDS_SESSION_DEFAULT && uds_session.security_access_granted;
 
         case UDS_ROUTINE_CONTROL:
@@ -142,7 +142,7 @@ bool is_service_allowed(uint8_t service_id) {
 
 
 /**
- * @brief Envoie une r�ponse positive au client
+ * @brief Envoie une reponse positive au client
  * @param service_id : Service identifier for which the response is sent
  */
 void send_positive_response_diagnostic_control(uint8_t service_id) {
@@ -223,15 +223,15 @@ void uds_ecu_reset(uint8_t resetType) {
 }
 
 void hard_reset() {
-    // Use the NVIC function to trigger une r�initialisation compl�te
+    // Use the NVIC function to trigger une reinitialisation complete
     NVIC_SystemReset();
 }
 void soft_reset() {
-    // Example of a soft reset qui pourrait red�marrer l'application sans r�initialiser les registres mat�riels
-    // You can define your own logic here pour r�initialiser uniquement les parties n�cessaires
-    // for example, reset certain peripherals ou red�marrer des t�ches sans r�initialiser l'ensemble du syst�me.
+    // Example of a soft reset qui pourrait redemarrer l'application sans reinitialiser les registres materiels
+    // You can define your own logic here pour reinitialiser uniquement les parties necessaires
+    // for example, reset certain peripherals ou redemarrer des teches sans reinitialiser l'ensemble du systeme.
 
-    // Restart the main loop ou r�initialiser certains p�riph�riques
+    // Restart the main loop ou reinitialiser certains peripheriques
 }
 void enable_rapid_power_shutdown() {
     // Enter a low-power mode
@@ -268,19 +268,19 @@ void send_positive_response_ecu_reset(uint8_t resetType, uint8_t powerDownTime) 
 }
 
 /**
- * @brief Envoie une r�ponse n�gative pour le service ECUReset
+ * @brief Envoie une reponse negative pour le service ECUReset
  * @param service_id : ECU Reset service identifier (0x11)
  * @param nrc : Negative Response Code (NRC)
  */
 void send_negative_response_ecu_reset(uint8_t service_id, uint8_t nrc) {
     uint8_t response[3] = {0};
 
-    // Remplir le message de r�ponse n�gative
+    // Remplir le message de reponse negative
     response[0] = UDS_NEGATIVE_RESPONSE;         // Generic negative response
     response[1] = service_id;   // Service in question (ECUReset 0x11)
-    response[2] = nrc;          // NRC sp�cifique
+    response[2] = nrc;          // NRC specifique
 
-    // Traitement des diff�rents NRC en fonction des conditions
+    // Traitement des differents NRC en fonction des conditions
     switch (nrc) {
         case NRC_SUB_FUNCTION_NOT_SUPPORTED:
             // Code 0x12 : Sub-function not supported
@@ -291,16 +291,16 @@ void send_negative_response_ecu_reset(uint8_t service_id, uint8_t nrc) {
             response[2] = NRC_INCORRECT_MESSAGE_LENGTH;
             break;
         case NRC_CONDITIONS_NOT_CORRECT:
-            // Code 0x22 : Conditions non respect�es pour l'ECU Reset
+            // Code 0x22 : Conditions non respectees pour l'ECU Reset
             response[2] = NRC_CONDITIONS_NOT_CORRECT;
             break;
         case NRC_SECURITY_ACCESS_DENIED:
-            // Code 0x33 : Acc�s de s�curit� refus�
+            // Code 0x33 : Acces de securite refuse
             response[2] = NRC_SECURITY_ACCESS_DENIED;
             break;
         default:
-            // Autres codes de r�ponse n�gative non d�finis
-            response[2] = 0x7F; // Code g�n�rique d'erreur si non reconnu
+            // Autres codes de reponse negative non definis
+            response[2] = 0x7F; // Code generique d'erreur si non reconnu
             break;
     }
 
@@ -312,10 +312,10 @@ void send_negative_response_ecu_reset(uint8_t service_id, uint8_t nrc) {
 /**
  * @brief Service Security Access (0x27)
  * @param sub_function : Sub-function (0x01 for seed request, 0x02 for key verification)
- * @param data : Pointeur vers les donn�es sentes (key ou autres param�tres)
- * @param data_length : Longueur des donn�es sentes
+ * @param data : Pointeur vers les donnees sentes (key ou autres parametres)
+ * @param data_length : Longueur des donnees sentes
  */
-// D�finition des variables de seed et key
+// Definition des variables de seed et key
 uint8_t security_seed_lvl1 = 0x5A; // Predefined seed for level 1
 uint8_t security_key_lvl1 = 0xA5;  // Predefined key for level 1 seed
 uint8_t security_seed_lvl2 = 0x9B; // Predefined seed for level 2
@@ -373,12 +373,12 @@ void uds_security_access(uint8_t sub_function, uint8_t *data, uint8_t data_lengt
 
 /**
  * @brief Send the seed for the given security level
- * @param level : Niveau de s�curit� (ex: 0x01 pour niveau 1, 0x03 pour niveau 2)
+ * @param level : Niveau de securite (ex: 0x01 pour niveau 1, 0x03 pour niveau 2)
  */
 void send_seed(uint8_t level) {
     uint8_t response[3] = {0};
 
-    response[0] = UDS_SECURITY_ACCESS + 0x40;  // R�ponse positive
+    response[0] = UDS_SECURITY_ACCESS + 0x40;  // Reponse positive
     response[1] = level;  // Requested security level
 
     // Seed specific to the security level
@@ -393,8 +393,8 @@ void send_seed(uint8_t level) {
 
 /**
  * @brief Verify the key sent by the client
- * @param level : Niveau de s�curit� (ex: 0x02 pour niveau 1, 0x04 pour niveau 2)
- * @param key : Cl� sente by the client
+ * @param level : Niveau de securite (ex: 0x02 pour niveau 1, 0x04 pour niveau 2)
+ * @param key : Cle sente by the client
  */
 bool verify_key(uint8_t level, uint8_t* key) {
     // Simple key verification
@@ -419,17 +419,17 @@ void send_positive_response_security_access(uint8_t sub_function) {
     uint8_t response[4] = {0};
 
     // Response SID to indicate success (ajout de 0x40 au service ID)
-    response[0] = UDS_SECURITY_ACCESS + 0x40;  // R�ponse positive (0x27 + 0x40 = 0x67)
+    response[0] = UDS_SECURITY_ACCESS + 0x40;  // Reponse positive (0x27 + 0x40 = 0x67)
     response[1] = sub_function;  // Type of secure access (echo of the sub-function)
 
-    // If it's a seed request, on inclut la graine dans la r�ponse
+    // If it's a seed request, on inclut la graine dans la reponse
     if (sub_function == UDS_SECURITY_ACCESS_REQUEST_SEED_LVL1) {
         response[2] = security_seed_lvl1;  // Security seed level 1
     } else if (sub_function == UDS_SECURITY_ACCESS_REQUEST_SEED_LVL2) {
         response[2] = security_seed_lvl2;  // Security seed level 2
     }
 
-    // Message length: bytes for sub-function and seed (si pr�sente)
+    // Message length: bytes for sub-function and seed (si presente)
     uint8_t response_length = (sub_function == UDS_SECURITY_ACCESS_REQUEST_SEED_LVL1 ||
                                sub_function == UDS_SECURITY_ACCESS_REQUEST_SEED_LVL2) ? 3 : 2;
 
@@ -438,22 +438,22 @@ void send_positive_response_security_access(uint8_t sub_function) {
 }
 
 /**
- * @brief Envoie une r�ponse n�gative pour le service Security Access
+ * @brief Envoie une reponse negative pour le service Security Access
  * @param sub_function : Concerned sub-function
  * @param nrc : Negative Response Code (NRC)
  */
 void send_negative_response_security_access(uint8_t sub_function, uint8_t nrc) {
     uint8_t response[3] = {0};
 
-    response[0] = UDS_NEGATIVE_RESPONSE;         // Indique une r�ponse n�gative
+    response[0] = UDS_NEGATIVE_RESPONSE;         // Indique une reponse negative
     response[1] = UDS_SECURITY_ACCESS;  // Service identifier
-    response[2] = nrc;          // NRC (code de r�ponse n�gative)
+    response[2] = nrc;          // NRC (code de reponse negative)
 
     send_can_message(response, 3);  // Send the response via CAN
 }
 
 /************************************************CommunicationControl************************************************************/
-// Impl�mentation du service Communication Control (0x28)
+// Implementation du service Communication Control (0x28)
 void uds_communication_control(uint8_t sub_function) {
     switch (sub_function) {
         case UDS_COMM_CONTROL_ENABLE_RX_AND_TX:
@@ -466,7 +466,7 @@ void uds_communication_control(uint8_t sub_function) {
             break;
 
         case UDS_COMM_CONTROL_ENABLE_RX_AND_DISABLE_TX:
-            // Activer uniquement Rx, d�sactiver Tx
+            // Activer uniquement Rx, desactiver Tx
             if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK) {
                 send_negative_response_communication_control(NRC_CONDITIONS_NOT_CORRECT);
                 return;
@@ -479,7 +479,7 @@ void uds_communication_control(uint8_t sub_function) {
             break;
 
         case UDS_COMM_CONTROL_DISABLE_RX_AND_ENABLE_TX:
-            // D�sactiver Rx, activer Tx
+            // Desactiver Rx, activer Tx
             if (HAL_CAN_DeactivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK) {
                 send_negative_response_communication_control(NRC_CONDITIONS_NOT_CORRECT);
                 return;
@@ -492,7 +492,7 @@ void uds_communication_control(uint8_t sub_function) {
             break;
 
         case UDS_COMM_CONTROL_DISABLE_RX_AND_TX:
-            // D�sactiver � la fois Rx et Tx
+            // Desactiver e la fois Rx et Tx
             if (HAL_CAN_DeactivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_TX_MAILBOX_EMPTY) != HAL_OK) {
                 send_negative_response_communication_control(NRC_CONDITIONS_NOT_CORRECT);
                 return;
@@ -501,22 +501,22 @@ void uds_communication_control(uint8_t sub_function) {
             break;
 
         case UDS_COMM_CONTROL_ENABLE_RX_AND_TX_WITH_ENHANCED_INFO:
-            // Enable Rx and Tx avec informations am�lior�es
+            // Enable Rx and Tx avec informations ameliorees
             if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_TX_MAILBOX_EMPTY) != HAL_OK) {
                 send_negative_response_communication_control(NRC_CONDITIONS_NOT_CORRECT);
                 return;
             }
-            // Ajoutez la logique pour les informations am�lior�es ici
+            // Ajoutez la logique pour les informations ameliorees ici
             send_positive_response_communication_control(sub_function);
             break;
 
         case UDS_COMM_CONTROL_ENABLE_RX_WITH_ENHANCED_INFO:
-            // Activer Rx avec informations am�lior�es
+            // Activer Rx avec informations ameliorees
             if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK) {
                 send_negative_response_communication_control(NRC_CONDITIONS_NOT_CORRECT);
                 return;
             }
-            // Ajoutez la logique pour les informations am�lior�es ici
+            // Ajoutez la logique pour les informations ameliorees ici
             send_positive_response_communication_control(sub_function);
             break;
 
@@ -528,12 +528,12 @@ void uds_communication_control(uint8_t sub_function) {
 }
 
 
-// Envoie une r�ponse positive pour Communication Control
+// Envoie une reponse positive pour Communication Control
 void send_positive_response_communication_control(uint8_t sub_function) {
-    // Tableau de r�ponse contenant 2 octets
+    // Tableau de reponse contenant 2 octets
     uint8_t response[2];
 
-    // Octet #1 : SID de r�ponse (0x68 = 0x28 + 0x40)
+    // Octet #1 : SID de reponse (0x68 = 0x28 + 0x40)
     response[0] = UDS_COMMUNICATION_CONTROL + 0x40;
 
     // Octet #2 : Echo of the sub-function sent by the client
@@ -543,12 +543,12 @@ void send_positive_response_communication_control(uint8_t sub_function) {
     send_can_message(response, 2);
 }
 
-// Envoie une r�ponse n�gative pour Communication Control
+// Envoie une reponse negative pour Communication Control
 void send_negative_response_communication_control(uint8_t nrc) {
-    // Tableau de r�ponse contenant 3 octets
+    // Tableau de reponse contenant 3 octets
     uint8_t response[3];
 
-    // Octet #1 : 0x7F indiquant une r�ponse n�gative
+    // Octet #1 : 0x7F indiquant une reponse negative
     response[0] = UDS_NEGATIVE_RESPONSE;
 
     // Octet #2 : Service ID (SID) pour Communication Control (0x28)
@@ -572,7 +572,7 @@ void uds_tester_present(uint8_t sub_function) {
 
     // Checking suppressPosRspMsgIndicationBit with a macro
     if ((sub_function & UDS_SUPPRESS_POS_RSP_MSG_INDICATION_BIT) == UDS_SUPPRESS_POS_RSP_MSG_INDICATION_BIT) {
-        // Si suppressPosRspMsgIndicationBit est � 1, aucune r�ponse ne doit �tre sente
+        // Si suppressPosRspMsgIndicationBit est e 1, aucune reponse ne doit etre sente
         return;
     }
 
@@ -581,24 +581,24 @@ void uds_tester_present(uint8_t sub_function) {
 }
 
 void send_positive_response_tester_present(uint8_t sub_function) {
-    // Tableau de r�ponse contenant 2 octets
+    // Tableau de reponse contenant 2 octets
     uint8_t response[2];
 
-    // Octet #1 : SID de r�ponse pour TesterPresent (0x3E + 0x40 = 0x7E)
+    // Octet #1 : SID de reponse pour TesterPresent (0x3E + 0x40 = 0x7E)
     response[0] = UDS_TESTER_PRESENT + 0x40;
 
     // Octet #2 : EEcho of the sub-function (bits 6 to 0) sente by the client
-    response[1] = sub_function & UDS_TESTER_PRESENT_SUB_FUNCTION_MASK;  // On ne prend que les bits 6 � 0
+    response[1] = sub_function & UDS_TESTER_PRESENT_SUB_FUNCTION_MASK;  // On ne prend que les bits 6 e 0
 
     // Envoi du message CAN
     send_can_message(response, 2);
 }
 
 void send_negative_response_tester_present(uint8_t nrc) {
-    // Tableau de r�ponse contenant 3 octets
+    // Tableau de reponse contenant 3 octets
     uint8_t response[3];
 
-    // Octet #1 : 0x7F indiquant une r�ponse n�gative
+    // Octet #1 : 0x7F indiquant une reponse negative
     response[0] = UDS_NEGATIVE_RESPONSE;
 
     // Octet #2 : Service ID (SID) pour Tester Present (0x3E)
@@ -613,7 +613,7 @@ void send_negative_response_tester_present(uint8_t nrc) {
 
 
 /*********************************************************access_timing_parameter**********************************************************/
-// Exemple de param�tres de temporisation par d�faut
+// Exemple de parametres de temporisation par defaut
 TimingParameters timing_params = {
     .p2_server_max = 0x32,       // 50 ms
     .p2_star_server_max = 0x1F4  // 500 ms
@@ -628,7 +628,7 @@ void uds_access_timing_parameter(uint8_t sub_function, uint8_t* data, uint8_t da
 
     switch (sub_function) {
         case UDS_TIMING_PARAMETER_READ:
-            // Lire les param�tres de temporisation
+            // Lire les parametres de temporisation
             if (data_length != 0) {
                 send_negative_response_access_timing(NRC_INCORRECT_MESSAGE_LENGTH);
                 return;
@@ -637,7 +637,7 @@ void uds_access_timing_parameter(uint8_t sub_function, uint8_t* data, uint8_t da
             break;
 
         case UDS_TIMING_PARAMETER_WRITE:
-            // �crire de nouveaux param�tres de temporisation
+            // ecrire de nouveaux parametres de temporisation
             if (data_length != 4) {
                 send_negative_response_access_timing(NRC_INCORRECT_MESSAGE_LENGTH);
                 return;
@@ -651,11 +651,11 @@ void uds_access_timing_parameter(uint8_t sub_function, uint8_t* data, uint8_t da
     }
 }
 
-// Fonction pour lire les param�tres de temporisation
+// Fonction pour lire les parametres de temporisation
 void read_timing_parameters() {
     uint8_t response[6];
 
-    // SID de r�ponse (0x83 + 0x40 = 0xC3)
+    // SID de reponse (0x83 + 0x40 = 0xC3)
     response[0] = UDS_ACCESS_TIMING_PARAMETER + 0x40;
 
     // P2Server_max
@@ -670,9 +670,9 @@ void read_timing_parameters() {
     send_can_message(response, 5);
 }
 
-// Fonction pour �crire de nouveaux param�tres de temporisation
+// Fonction pour ecrire de nouveaux parametres de temporisation
 void write_timing_parameters(uint8_t* data, uint8_t data_length) {
-    // Mise � jour des param�tres de temporisation avec les donn�es re�ues
+    // Mise e jour des parametres de temporisation avec les donnees reeues
     timing_params.p2_server_max = (data[0] << 8) | data[1];        // P2Server_max
     timing_params.p2_star_server_max = (data[2] << 8) | data[3];   // P2*Server_max
 
@@ -683,10 +683,10 @@ void write_timing_parameters(uint8_t* data, uint8_t data_length) {
 void send_positive_response_access_timing(uint8_t sub_function) {
     uint8_t response[2];
 
-    // SID de r�ponse pour AccessTimingParameter (0x83 + 0x40 = 0xC3)
+    // SID de reponse pour AccessTimingParameter (0x83 + 0x40 = 0xC3)
     response[0] = UDS_ACCESS_TIMING_PARAMETER + 0x40;
 
-    // �Echo of the sub-function (bits 6 to 0)
+    // eEcho of the sub-function (bits 6 to 0)
     response[1] = sub_function & 0x7F;
 
     // Send the CAN response
@@ -697,7 +697,7 @@ void send_positive_response_access_timing(uint8_t sub_function) {
 void send_negative_response_access_timing(uint8_t nrc) {
     uint8_t response[3];
 
-    // Octet #1 : 0x7F indiquant une r�ponse n�gative
+    // Octet #1 : 0x7F indiquant une reponse negative
     response[0] = UDS_NEGATIVE_RESPONSE;
 
     // Octet #2 : Service ID (SID) pour Access Timing Parameter (0x83)
@@ -712,9 +712,9 @@ void send_negative_response_access_timing(uint8_t nrc) {
 
 /***********************************************SecuredDataTransmission**********************************************************/
 /**
- * @brief Impl�mente le service de transmission de donn�es s�curis�es (0x84)
- * @param data : Donn�es � transmettre
- * @param data_length : Longueur des donn�es
+ * @brief Implemente le service de transmission de donnees securisees (0x84)
+ * @param data : Donnees e transmettre
+ * @param data_length : Longueur des donnees
  */
 SecuritySession current_session = {
     .session_id = UDS_SESSION_DEFAULT,
@@ -734,28 +734,28 @@ void uds_secured_data_transmission(uint8_t* data, uint8_t data_length) {
         return;
     }
 
-    // Chiffrement des donn�es
+    // Chiffrement des donnees
     uint8_t encrypted_data[MAX_DATA_SIZE];
     encrypt_data(data, data_length, encrypted_data, current_session.encryption_key);
 
-    // Envoi des donn�es chiffr�es
+    // Envoi des donnees chiffrees
     secured_data_send(encrypted_data, data_length);
 
-    // Donn�es de r�ponse (� adapter selon vos besoins)
+    // Donnees de reponse (e adapter selon vos besoins)
     uint8_t securityDataResponseRecord[MAX_DATA_SIZE];
-    // Remplir le tableau securityDataResponseRecord avec des donn�es appropri�es
+    // Remplir le tableau securityDataResponseRecord avec des donnees appropriees
 
-    // R�ponse positive apr�s transmission
+    // Reponse positive apres transmission
     send_positive_response_secured_data_transmission(securityDataResponseRecord, data_length);
 }
 
 
 /**
- * @brief Chiffre les donn�es � l'aide de la cl� sp�cifi�e
- * @param data : Donn�es � chiffrer
- * @param length : Longueur des donn�es
- * @param encrypted_data : Tableau o� stocker les donn�es chiffr�es
- * @param key : Cl� de chiffrement
+ * @brief Chiffre les donnees e l'aide de la cle specifiee
+ * @param data : Donnees e chiffrer
+ * @param length : Longueur des donnees
+ * @param encrypted_data : Tableau oe stocker les donnees chiffrees
+ * @param key : Cle de chiffrement
  */
 void encrypt_data(uint8_t* data, uint8_t length, uint8_t* encrypted_data, uint8_t* key) {
     // Exemple basique de chiffrement XOR (vous devez remplacer par un chiffrement plus robuste comme AES)
@@ -765,14 +765,14 @@ void encrypt_data(uint8_t* data, uint8_t length, uint8_t* encrypted_data, uint8_
 }
 
 /**
- * @brief D�chiffre les donn�es � l'aide de la cl� sp�cifi�e
- * @param encrypted_data : Encrypted data � d�chiffrer
- * @param length : Longueur des donn�es chiffr�es
- * @param decrypted_data : Tableau o� stocker les donn�es d�chiffr�es
- * @param key : Cl� de d�chiffrement
+ * @brief Dechiffre les donnees e l'aide de la cle specifiee
+ * @param encrypted_data : Encrypted data e dechiffrer
+ * @param length : Longueur des donnees chiffrees
+ * @param decrypted_data : Tableau oe stocker les donnees dechiffrees
+ * @param key : Cle de dechiffrement
  */
 void decrypt_data(uint8_t* encrypted_data, uint8_t length, uint8_t* decrypted_data, uint8_t* key) {
-    // Exemple basique de d�chiffrement XOR (vous devez remplacer par un chiffrement plus robuste comme AES)
+    // Exemple basique de dechiffrement XOR (vous devez remplacer par un chiffrement plus robuste comme AES)
     for (uint8_t i = 0; i < length; i++) {
         decrypted_data[i] = encrypted_data[i] ^ key[i % 16];
     }
@@ -781,10 +781,10 @@ void decrypt_data(uint8_t* encrypted_data, uint8_t length, uint8_t* decrypted_da
 /**
  * @brief Send encrypted data via the CAN bus
  * @param encrypted_data : Encrypted data to send
- * @param length : Longueur des donn�es chiffr�es
+ * @param length : Longueur des donnees chiffrees
  */
 void secured_data_send(uint8_t* encrypted_data, uint8_t length) {
-    // Vous pouvez ajuster les en-t�tes CAN ici si n�cessaire
+    // Vous pouvez ajuster les en-tetes CAN ici si necessaire
     send_can_message(encrypted_data, length);
 }
 
@@ -796,7 +796,7 @@ void send_positive_response_secured_data_transmission(uint8_t* securityDataRespo
 
     // Bytes 2 to n: securityDataResponseRecord[]
     for (uint8_t i = 0; i < data_length; i++) {
-        response[i + 1] = securityDataResponseRecord[i]; // Ajouter les param�tres de r�ponse
+        response[i + 1] = securityDataResponseRecord[i]; // Ajouter les parametres de reponse
     }
 
     // Send the response via CAN
@@ -812,15 +812,15 @@ void send_negative_response_secured_data_transmission(uint8_t nrc) {
     // Byte 2: Secured Data Transmission Service ID (0x84)
     response[1] = UDS_SECURED_DATA_TRANSMISSION;
 
-    // Byte 3: NRC (Code de r�ponse n�gative)
+    // Byte 3: NRC (Code de reponse negative)
     response[2] = nrc;
 
     // Send the response via CAN
     send_can_message(response, 3);
 }
 /***********************************************ControlDTCSetting****************************************************************/
-// Drapeaux pour g�rer l'�tat de mise � jour des bits DTC
-bool dtc_update_enabled = true; // Par d�faut, les bits DTC sont mis � jour
+// Drapeaux pour gerer l'etat de mise e jour des bits DTC
+bool dtc_update_enabled = true; // Par defaut, les bits DTC sont mis e jour
 
 /**
  * @brief Service ControlDTCSetting (0x85)
@@ -842,22 +842,22 @@ void uds_control_dtc_setting(uint8_t sub_function) {
     // Check and process the sub-function
     if (sub_function == UDS_CONTROL_DTC_SETTING_ON) {
         if (!dtc_update_enabled) {
-            dtc_update_enabled = true; // Activer la mise � jour des DTC
+            dtc_update_enabled = true; // Activer la mise e jour des DTC
         }
-        // Send a positive response m�me si d�j� activ�
+        // Send a positive response meme si deje active
         send_positive_response_control_dtc_setting(sub_function);
 
     } else if (sub_function == UDS_CONTROL_DTC_SETTING_OFF) {
         if (dtc_update_enabled) {
-            dtc_update_enabled = false; // D�sactiver la mise � jour des DTC
+            dtc_update_enabled = false; // Desactiver la mise e jour des DTC
         }
-        // Send a positive response m�me si d�j� d�sactiv�
+        // Send a positive response meme si deje desactive
         send_positive_response_control_dtc_setting(sub_function);
     }
 }
 
 /**
- * @brief Envoie une r�ponse positive pour le service ControlDTCSetting
+ * @brief Envoie une reponse positive pour le service ControlDTCSetting
  * @param sub_function : Sub-function (0x01 to enable, 0x02 to disable)
  */
 void send_positive_response_control_dtc_setting(uint8_t sub_function) {
@@ -874,7 +874,7 @@ void send_positive_response_control_dtc_setting(uint8_t sub_function) {
 }
 
 /**
- * @brief Envoie une r�ponse n�gative pour le service ControlDTCSetting
+ * @brief Envoie une reponse negative pour le service ControlDTCSetting
  * @param nrc : Negative Response Code (NRC)
  */
 void send_negative_response_control_dtc_setting(uint8_t nrc) {
@@ -886,40 +886,40 @@ void send_negative_response_control_dtc_setting(uint8_t nrc) {
     // Service in question (0x85 pour ControlDTCSetting)
     response[1] = UDS_CONTROL_DTC_SETTING;
 
-    // NRC (Code de r�ponse n�gative)
+    // NRC (Code de reponse negative)
     response[2] = nrc;
 
-    // Envoi de la r�ponse via CAN
+    // Envoi de la reponse via CAN
     send_can_message(response, 3);
 }
 
 /*************************************************ResponseOnEvent****************************************************************/
-Event events[MAX_EVENTS]; // D�finition de la variable events
+Event events[MAX_EVENTS]; // Definition de la variable events
 
 void uds_response_on_event(uint8_t sub_function, uint8_t* data, uint8_t data_length) {
     switch (sub_function) {
         case ROE_STOP_RESPONSE_ON_EVENT:
-            // Appel de la fonction pour arr�ter la r�ponse sur �v�nement
+            // Appel de la fonction pour arreter la reponse sur evenement
             stop_response_on_event();
             break;
 
         case ROE_ON_DTC_STATUS_CHANGE:
-            // Gestion de l'�v�nement bas� sur le changement de statut DTC
+            // Gestion de l'evenement base sur le changement de statut DTC
             on_dtc_status_change(data, data_length);
             break;
 
         case ROE_ON_TIMER_INTERRUPT:
-            // Gestion de l'�v�nement bas� sur une interruption de timer
+            // Gestion de l'evenement base sur une interruption de timer
             on_timer_interrupt(data, data_length);
             break;
 
         case ROE_START_RESPONSE_ON_EVENT:
-            // D�marrage de la r�ponse sur �v�nement
+            // Demarrage de la reponse sur evenement
             start_response_on_event();
             break;
 
         case ROE_CLEAR_RESPONSE_ON_EVENT:
-            // Nettoyage des �v�nements configur�s
+            // Nettoyage des evenements configures
             clear_response_on_event();
             break;
 
@@ -931,12 +931,12 @@ void uds_response_on_event(uint8_t sub_function, uint8_t* data, uint8_t data_len
 }
 
 void stop_response_on_event() {
-    // D�sactiver tous les �v�nements actifs
+    // Desactiver tous les evenements actifs
     for (int i = 0; i < MAX_EVENTS; i++) {
         events[i].isActive = false;
     }
 
-    // Send a positive response avec des valeurs par d�faut
+    // Send a positive response avec des valeurs par defaut
     send_positive_response_roe(ROE_STOP_RESPONSE_ON_EVENT, 0x00, 0x00, 0x00);
 }
 
@@ -947,7 +947,7 @@ void on_dtc_status_change(uint8_t* data, uint8_t data_length) {
         return;
     }
 
-    // Configurer un nouvel �v�nement pour DTC Status Change
+    // Configurer un nouvel evenement pour DTC Status Change
     for (int i = 0; i < MAX_EVENTS; i++) {
         if (!events[i].isActive) {
             events[i].eventType = ROE_ON_DTC_STATUS_CHANGE;
@@ -968,7 +968,7 @@ void on_timer_interrupt(uint8_t* data, uint8_t data_length) {
         return;
     }
 
-    // Configurer un �v�nement pour Timer Interrupt
+    // Configurer un evenement pour Timer Interrupt
     for (int i = 0; i < MAX_EVENTS; i++) {
         if (!events[i].isActive) {
             events[i].eventType = ROE_ON_TIMER_INTERRUPT;
@@ -984,10 +984,10 @@ void on_timer_interrupt(uint8_t* data, uint8_t data_length) {
 
 
 void start_response_on_event() {
-    // Activer les �v�nements configur�s
+    // Activer les evenements configures
     for (int i = 0; i < MAX_EVENTS; i++) {
         if (events[i].isActive) {
-            // Lancer la logique de gestion des �v�nements
+            // Lancer la logique de gestion des evenements
         }
     }
 
@@ -996,7 +996,7 @@ void start_response_on_event() {
 }
 
 void clear_response_on_event() {
-    // R�initialiser tous les �v�nements
+    // Reinitialiser tous les evenements
     for (int i = 0; i < MAX_EVENTS; i++) {
         events[i].isActive = false;
         events[i].eventType = 0;
@@ -1008,7 +1008,7 @@ void clear_response_on_event() {
 }
 
 void send_positive_response_roe(uint8_t sub_function, uint8_t eventType, uint8_t numberOfIdentifiedEvents, uint8_t eventWindowTime) {
-    // Initialiser une taille suffisante pour inclure tous les param�tres (3 octets de base + les autres donn�es)
+    // Initialiser une taille suffisante pour inclure tous les parametres (3 octets de base + les autres donnees)
     uint8_t response[6] = {0};
 
     // Byte 1: ResponseOnEvent Response SID (0x86 + 0x40 = 0xC6)
@@ -1017,13 +1017,13 @@ void send_positive_response_roe(uint8_t sub_function, uint8_t eventType, uint8_t
     // Byte 2: eventType (echo of the sub-function in the request)
     response[1] = eventType;
 
-    // Byte 3: numberOfIdentifiedEvents (0x00 si non applicable ou nombre r�el d'�v�nements)
+    // Byte 3: numberOfIdentifiedEvents (0x00 si non applicable ou nombre reel d'evenements)
     response[2] = numberOfIdentifiedEvents;
 
-    // Byte 4: eventWindowTime (temps de la fen�tre d'�v�nement)
+    // Byte 4: eventWindowTime (temps de la fenetre d'evenement)
     response[3] = eventWindowTime;
 
-    // Envoi du message CAN avec la r�ponse positive (4 octets dans ce cas)
+    // Envoi du message CAN avec la reponse positive (4 octets dans ce cas)
     send_can_message(response, 4);
 }
 
@@ -1084,7 +1084,7 @@ void uds_link_control(uint8_t sub_function, uint8_t* data, uint8_t data_length) 
 void send_positive_response_link_control(uint8_t sub_function) {
     uint8_t response[2] = {0};
 
-    response[0] = UDS_LINK_CONTROL + 0x40;  // R�ponse SID
+    response[0] = UDS_LINK_CONTROL + 0x40;  // Reponse SID
     response[1] = sub_function;  // Echo of la sous-fonction
 
     send_can_message(response, 2);
@@ -1093,9 +1093,9 @@ void send_positive_response_link_control(uint8_t sub_function) {
 void send_negative_response_link_control(uint8_t sub_function, uint8_t nrc) {
     uint8_t response[3] = {0};
 
-    response[0] = UDS_NEGATIVE_RESPONSE; // R�ponse n�gative
+    response[0] = UDS_NEGATIVE_RESPONSE; // Reponse negative
     response[1] = UDS_LINK_CONTROL; // Service in question (LinkControl)
-    response[2] = nrc; // NRC (Code de r�ponse n�gative)
+    response[2] = nrc; // NRC (Code de reponse negative)
 
     send_can_message(response, 3);
 }

@@ -1,6 +1,6 @@
 #include "Data_Transmission_functional_unit.h"
 #include "uds_services.c"
-
+#include "main.h"
 
 
 
@@ -135,9 +135,9 @@ void send_positive_response_read_data_by_identifier(uint8_t* dataIdentifiers, ui
 void send_negative_response_read_data_by_identifier(uint8_t nrc) {
     uint8_t response[3] = {0};
 
-    response[0] = UDS_NEGATIVE_RESPONSE;  // SID pour r�ponse n�gative 0x7F
+    response[0] = UDS_NEGATIVE_RESPONSE;  // SID pour reponse negative 0x7F
     response[1] = UDS_READ_DATA_BY_IDENTIFIER;  // Service SID 0x22
-    response[2] = nrc;  // Code de r�ponse n�gative (NRC)
+    response[2] = nrc;  // Code de reponse negative (NRC)
 
     send_can_message(response, 3);
     //send_uart_message(response, 3);
@@ -256,13 +256,13 @@ void uds_read_data_by_periodic_identifier(uint8_t* data, uint8_t data_length) {
     for (uint8_t i = 2; i < data_length; i++) {
         uint8_t periodicDataIdentifier = data[i];
 
-        // V�rifier si le PID est valide dans la session active
+        // Verifier si le PID est valide dans la session active
         if (!is_pid_supported_in_session(periodicDataIdentifier)) {
             send_negative_response_read_data_by_periodic_identifier(NRC_REQUEST_OUT_OF_RANGE);
             return;
         }
 
-        // V�rifier la s�curit� si n�cessaire
+        // Verifier la securite si necessaire
         if (!is_security_granted_for_pid(periodicDataIdentifier)) {
             send_negative_response_read_data_by_periodic_identifier(NRC_SECURITY_ACCESS_DENIED);
             return;
@@ -308,14 +308,14 @@ void stop_periodic_transmission(uint8_t pid) {
     }
 }
 
-// Fonction pour arr�ter toutes les transmissions p�riodiques
+// Fonction pour arreter toutes les transmissions periodiques
 void stop_all_periodic_transmissions(void) {
     for (int i = 0; i < MAX_PERIODIC_PIDS; i++) {
         periodic_pid_list[i].isActive = false;
     }
 }
 
-// Fonction pour envoyer une r�ponse positive initiale
+// Fonction pour envoyer une reponse positive initiale
 void send_positive_response_read_data_by_periodic_identifier(void) {
     uint8_t response[2];
     response[0] = UDS_READ_DATA_BY_PERIODIC_IDENTIFIER + 0x40; // Positive response SID
@@ -358,9 +358,9 @@ bool is_security_granted_for_pid(uint8_t pid) {
 static DynamicallyDefinedIdentifier dynamic_did_list[MAX_DYNAMIC_DIDS];
 static uint8_t dynamic_did_count = 0;
 
-// Fonction pour g�rer le service DynamicallyDefineDataIdentifier (0x2C)
+// Fonction pour gerer le service DynamicallyDefineDataIdentifier (0x2C)
 void uds_dynamically_define_data_identifier(uint8_t sub_function, uint8_t *data, uint8_t data_length) {
-    // V�rifier la sous-fonction demand�e
+    // Verifier la sous-fonction demandee
     switch (sub_function) {
         case UDS_DDDI_DEFINE_BY_IDENTIFIER:
             define_by_identifier(data, data_length);
@@ -626,14 +626,18 @@ void send_can_message(uint8_t *message, uint8_t length) {
     uint32_t TxMailbox;
 
     TxHeader.DLC = length;
-    TxHeader.StdId = 0x7E0; // Identifiant standard UDS pour l'ECU
+    TxHeader.StdId = 0x7E0; // CAN ID for ECU responses
     TxHeader.IDE = CAN_ID_STD;
     TxHeader.RTR = CAN_RTR_DATA;
     TxHeader.TransmitGlobalTime = DISABLE;
 
     if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan1) == 0) {
+         UART_Send("No free mailbox!\n");
         return; // No free mailbox — drop the response rather than blocking
     }
 
-    HAL_CAN_AddTxMessage(&hcan1, &TxHeader, message, &TxMailbox);
+    if(HAL_OK == HAL_CAN_AddTxMessage(&hcan1, &TxHeader, message, &TxMailbox)) {
+        // Message sent successfully
+        UART_Send("Message sent!\n");
+    }
 }
