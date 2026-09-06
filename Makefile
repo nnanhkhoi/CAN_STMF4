@@ -24,13 +24,13 @@ Core/Src/stm32f4xx_hal_msp.c \
 Core/Src/system_stm32f4xx.c \
 Core/Src/syscalls.c \
 Core/Src/sysmem.c \
-Core/Src/uds_services.c \
-Core/Src/Data_Transmission_functional_unit.c \
-Core/Src/Diagnostic_Communication_Management_functional_unit.c \
-Core/Src/InputOutput_Control_functional_unit.c \
-Core/Src/Routine_functional_unit.c \
-Core/Src/Stored_Data_Transmission_functional_unit.c \
-Core/Src/Upload_Download_functional_unit.c \
+Core/Diagnostic/uds_services.c \
+Core/Diagnostic/Data_Transmission_functional_unit.c \
+Core/Diagnostic/Diagnostic_Communication_Management_functional_unit.c \
+Core/Diagnostic/InputOutput_Control_functional_unit.c \
+Core/Diagnostic/Routine_functional_unit.c \
+Core/Diagnostic/Stored_Data_Transmission_functional_unit.c \
+Core/Diagnostic/Upload_Download_functional_unit.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_can.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c \
@@ -82,6 +82,7 @@ AS_INCLUDES =
 
 C_INCLUDES = \
 -ICore/Inc \
+-ICore/Diagnostic \
 -IDrivers/STM32F4xx_HAL_Driver/Inc \
 -IDrivers/CMSIS/Device/ST/STM32F4xx/Include \
 -IDrivers/CMSIS/Include
