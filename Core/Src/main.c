@@ -142,6 +142,12 @@ int main(void)
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
   UART_Send("UART Initialized Successfully!\r\n");
+  const uds_test_case_t test_cases[] = {
+    {"Test Case 1", {0x02, 0x10, 0x03}, 3},
+    {"Test Case 2", {0x02, 0x10, 0x04}, 3}
+  };
+
+  send_test_can(&test_cases[0]);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -168,13 +174,23 @@ int main(void)
       UART_Send(buf);
     }
 
-    // Print CAN error if any
+    // Print CAN error if any (with detailed flags)
     if (can_error_code &&  (HAL_GetTick() - last_tx_tick >= 1000) )
     {
       last_tx_tick = HAL_GetTick();
-      char buf[80];
-      snprintf(buf, sizeof(buf), "[CAN ERR] ErrorCode=0x%08lX\r\n",
-        (unsigned long)can_error_code);
+      char buf[200];
+      snprintf(buf, sizeof(buf), "[CAN ERR] 0x%08lX | Flags: %s%s%s%s%s%s%s%s%s\r\n",
+        (unsigned long)can_error_code,
+        (can_error_code & 0x01) ? "EWG " : "",      // Protocol Error Warning
+        (can_error_code & 0x02) ? "EPV " : "",      // Error Passive
+        (can_error_code & 0x04) ? "BOF " : "",      // Bus-off
+        (can_error_code & 0x08) ? "STF " : "",      // Stuff error
+        (can_error_code & 0x10) ? "FOR " : "",      // Form error
+        (can_error_code & 0x20) ? "ACK " : "",      // Acknowledgment error
+        (can_error_code & 0x40) ? "BR " : "",       // Bit recessive error
+        (can_error_code & 0x80) ? "BD " : "",       // Bit dominant error
+        (can_error_code & 0x100) ? "CRC " : ""      // CRC error
+      );
       UART_Send(buf);
       can_error_code = 0;
     }
