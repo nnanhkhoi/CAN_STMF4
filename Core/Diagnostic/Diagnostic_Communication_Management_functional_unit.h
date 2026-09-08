@@ -127,6 +127,7 @@ extern uint8_t security_key_lvl2;
 #define SUPPORTED_DID_1 0x1001
 #define SUPPORTED_DID_2 0x1002
 #define SUPPORTED_DID_3 0x1003
+#define SUPPORTED_DID_4 0xF187
 
 // Session initialization
 extern UDS_Session uds_session;

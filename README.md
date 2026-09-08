@@ -41,7 +41,11 @@ The CANable and MCP2551 are two nodes on the same CANH/CANL bus; they are not co
 
 ### UDS Service Dispatch
 
-All CAN messages arrive in `HAL_CAN_RxFifo0MsgPendingCallback()` (in `main.c`). The first byte (`rcvd_msg[0]`) is the UDS Service ID (SID), which dispatches to the appropriate handler. Responses are sent via `send_can_message()` (declared in `Data_Transmission_functional_unit.h`).
+`HAL_CAN_RxFifo0MsgPendingCallback()` (in `main.c`) reads exactly one frame and copies its header and eight data bytes into a 16-frame queue. It never parses requests, runs services, transmits, logs, delays, or waits for the FIFO to empty. When the queue is full, it releases the received hardware frame, drops that newest frame, and records an overflow flag and a saturating drop count. Read failures and hardware FIFO overruns are also recorded; the CAN status/error interrupt is enabled.
+
+The foreground loop removes one frame per iteration and calls `process_can_frame()`. The existing format uses the first byte as the UDS Service ID (SID); remote frames and frames shorter than two bytes are ignored by the dispatcher. Service handlers and `send_can_message()` now run in foreground context, as does UART logging. A short critical section protects each queue removal and each error snapshot, restoring the previous interrupt state before application work. Error and drop reports run at most once per second.
+
+The queue absorbs bursts, but sustained input faster than foreground processing can still cause drops, especially during blocking UART output. The ISR has fixed work per entry; worst-case timing on the board still needs measurement.
 
 ### Functional Units (Core/Src/ and Core/Inc/)
 

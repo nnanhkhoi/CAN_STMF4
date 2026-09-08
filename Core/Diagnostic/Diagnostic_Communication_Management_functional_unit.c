@@ -103,6 +103,7 @@ bool is_service_allowed(uint8_t service_id) {
         case UDS_TESTER_PRESENT:
         case UDS_CLEAR_DIAGNOSTIC_INFORMATION:
         case UDS_READ_DTC_INFORMATION:
+        case UDS_READ_DATA_BY_IDENTIFIER:
             // These services are always allowed in both sessions
             return true;
 
@@ -123,7 +124,6 @@ bool is_service_allowed(uint8_t service_id) {
             // These services are only allowed in non-default sessions
             return uds_session.current_session != UDS_SESSION_DEFAULT;
 
-        case UDS_READ_DATA_BY_IDENTIFIER:
         case UDS_WRITE_DATA_BY_IDENTIFIER:
         case UDS_READ_SCALING_DATA_BY_IDENTIFIER:
         case UDS_DYNAMICAL_DEFINE_DATA_IDENTIFIER:

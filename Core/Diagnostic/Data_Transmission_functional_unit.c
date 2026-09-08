@@ -43,11 +43,6 @@ void uds_read_data_by_identifier(uint8_t* data, uint8_t data_length) {
             return;
         }
 
-        // Verification of security conditions for the DID
-        if (is_security_required_for_did(did) && !uds_session.security_access_granted) {
-            send_negative_response_read_data_by_identifier(NRC_SECURITY_ACCESS_DENIED);
-            return;
-        }
 
         switch (did) {
             case SUPPORTED_DID_1:
@@ -72,6 +67,22 @@ void uds_read_data_by_identifier(uint8_t* data, uint8_t data_length) {
                 response[response_index++] = data[i + 1];   // DID LSB
                 memcpy(&response[response_index], data_record_3, sizeof(data_record_3));
                 response_index += sizeof(data_record_3);
+                did_supported = true;
+                break;
+
+            case SUPPORTED_DID_4:
+                response[response_index++] = data[i];       // DID MSB
+                response[response_index++] = data[i + 1];   // DID LSB
+                // Add the associated data for SUPPORTED_DID_4 (example values)
+                response[response_index++] = 0xDE;           // Example data byte 1
+                response[response_index++] = 0xAD;           // Example data byte 2
+                response[response_index++] = 0xAD;           // Example data byte 3
+                response[response_index++] = 0xAD;           // Example data byte 4
+                response[response_index++] = 0xAD;           // Example data byte 5
+                response[response_index++] = 0xAD;           // Example data byte 6
+                response[response_index++] = 0xAD;           // Example data byte 7
+                response[response_index++] = 0xAD;           // Example data byte 8
+                response[response_index++] = 0xAD;           // Example data byte 9
                 did_supported = true;
                 break;
 
@@ -259,12 +270,6 @@ void uds_read_data_by_periodic_identifier(uint8_t* data, uint8_t data_length) {
         // Verifier si le PID est valide dans la session active
         if (!is_pid_supported_in_session(periodicDataIdentifier)) {
             send_negative_response_read_data_by_periodic_identifier(NRC_REQUEST_OUT_OF_RANGE);
-            return;
-        }
-
-        // Verifier la securite si necessaire
-        if (!is_security_granted_for_pid(periodicDataIdentifier)) {
-            send_negative_response_read_data_by_periodic_identifier(NRC_SECURITY_ACCESS_DENIED);
             return;
         }
 

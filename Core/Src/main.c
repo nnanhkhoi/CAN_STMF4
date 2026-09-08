@@ -31,12 +31,18 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+typedef struct
+{
+  CAN_RxHeaderTypeDef header;
+  uint8_t data[8];
+} can_rx_frame_t;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define CAN_RX_QUEUE_CAPACITY 16U
+#define CAN_RX_FLAG_OVERFLOW  (1U << 0)
+#define CAN_RX_FLAG_READ_ERROR (1U << 1)
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -47,22 +53,43 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-CAN_RxHeaderTypeDef RxHeader;
-
-/* Debug buffer for CAN RX — filled in ISR, printed in main loop */
-volatile uint8_t can_rx_flag = 0;
-uint8_t can_rx_debug_data[8];
-CAN_RxHeaderTypeDef can_rx_debug_header;
-volatile uint32_t can_error_code = 0;
+/* RX ISR produces; foreground consumes with a bounded critical section. */
+static can_rx_frame_t can_rx_queue[CAN_RX_QUEUE_CAPACITY];
+static uint32_t can_rx_head;
+static uint32_t can_rx_tail;
+static volatile uint32_t can_rx_count;
+static volatile uint32_t can_rx_flags;
+static volatile uint32_t can_rx_dropped;
+static volatile uint32_t can_error_code;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
+static uint8_t can_rx_pop(can_rx_frame_t *frame);
+static void process_can_frame(can_rx_frame_t *frame);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+/* Copy before releasing the slot, then restore the caller's interrupt state. */
+static uint8_t can_rx_pop(can_rx_frame_t *frame)
+{
+  uint32_t primask = __get_PRIMASK();
+  uint8_t available = 0U;
+
+  __disable_irq();
+  if (can_rx_count != 0U)
+  {
+    *frame = can_rx_queue[can_rx_tail];
+    can_rx_tail = (can_rx_tail + 1U) % CAN_RX_QUEUE_CAPACITY;
+    --can_rx_count;
+    available = 1U;
+  }
+  __set_PRIMASK(primask);
+  return available;
+}
+
 typedef struct
 {
   const char *label;
@@ -111,7 +138,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-  static uint32_t last_tx_tick = 0;
+  static uint32_t last_error_tick = 0;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -153,41 +180,65 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-    // Print CAN RX debug info outside ISR (safe UART call)
-    if (can_rx_flag)
+    /* Process one queued frame per pass so error reporting also gets time. */
+    can_rx_frame_t frame;
+    if (can_rx_pop(&frame))
     {
-      can_rx_flag = 0;
+      process_can_frame(&frame);
       char buf[120];
       snprintf(buf, sizeof(buf),
         "[RX] ID=0x%03lX DLC=%lu Data=[%02X %02X %02X %02X %02X %02X %02X %02X]\r\n",
-        (unsigned long)can_rx_debug_header.StdId,
-        (unsigned long)can_rx_debug_header.DLC,
-        can_rx_debug_data[0], can_rx_debug_data[1],
-        can_rx_debug_data[2], can_rx_debug_data[3],
-        can_rx_debug_data[4], can_rx_debug_data[5],
-        can_rx_debug_data[6], can_rx_debug_data[7]);
+        (unsigned long)frame.header.StdId,
+        (unsigned long)frame.header.DLC,
+        frame.data[0], frame.data[1],
+        frame.data[2], frame.data[3],
+        frame.data[4], frame.data[5],
+        frame.data[6], frame.data[7]);
       UART_Send(buf);
     }
 
     // Print CAN error if any (with detailed flags)
-    if (can_error_code &&  (HAL_GetTick() - last_tx_tick >= 1000) )
+    if (HAL_GetTick() - last_error_tick >= 1000U)
     {
-      last_tx_tick = HAL_GetTick();
-      char buf[200];
-      snprintf(buf, sizeof(buf), "[CAN ERR] 0x%08lX | Flags: %s%s%s%s%s%s%s%s%s\r\n",
-        (unsigned long)can_error_code,
-        (can_error_code & 0x01) ? "EWG " : "",      // Protocol Error Warning
-        (can_error_code & 0x02) ? "EPV " : "",      // Error Passive
-        (can_error_code & 0x04) ? "BOF " : "",      // Bus-off
-        (can_error_code & 0x08) ? "STF " : "",      // Stuff error
-        (can_error_code & 0x10) ? "FOR " : "",      // Form error
-        (can_error_code & 0x20) ? "ACK " : "",      // Acknowledgment error
-        (can_error_code & 0x40) ? "BR " : "",       // Bit recessive error
-        (can_error_code & 0x80) ? "BD " : "",       // Bit dominant error
-        (can_error_code & 0x100) ? "CRC " : ""      // CRC error
-      );
-      UART_Send(buf);
-      can_error_code = 0;
+      last_error_tick = HAL_GetTick();
+      uint32_t primask = __get_PRIMASK();
+      __disable_irq();
+      uint32_t errors = can_error_code;
+      uint32_t rx_flags = can_rx_flags;
+      uint32_t dropped = can_rx_dropped;
+      can_error_code = 0U;
+      can_rx_flags = 0U;
+      can_rx_dropped = 0U;
+      __set_PRIMASK(primask);
+
+      /* Formatting and UART transmission always run with interrupts restored. */
+      if (errors != 0U)
+      {
+        char buf[200];
+        snprintf(buf, sizeof(buf), "[CAN ERR] 0x%08lX | Flags: %s%s%s%s%s%s%s%s%s%s\r\n",
+          (unsigned long)errors,
+          (errors & 0x01) ? "EWG " : "",      // Protocol Error Warning
+          (errors & 0x02) ? "EPV " : "",      // Error Passive
+          (errors & 0x04) ? "BOF " : "",      // Bus-off
+          (errors & 0x08) ? "STF " : "",      // Stuff error
+          (errors & 0x10) ? "FOR " : "",      // Form error
+          (errors & 0x20) ? "ACK " : "",      // Acknowledgment error
+          (errors & 0x40) ? "BR " : "",       // Bit recessive error
+          (errors & 0x80) ? "BD " : "",       // Bit dominant error
+          (errors & 0x100) ? "CRC " : "",     // CRC error
+          (errors & HAL_CAN_ERROR_RX_FOV0) ? "RX_FOV0 " : ""
+        );
+        UART_Send(buf);
+        }
+      if (rx_flags != 0U)
+      {
+        char buf[120];
+        snprintf(buf, sizeof(buf), "[CAN RX] Flags: %s%s dropped=%lu\r\n",
+          (rx_flags & CAN_RX_FLAG_OVERFLOW) ? "QUEUE_OVERFLOW " : "",
+          (rx_flags & CAN_RX_FLAG_READ_ERROR) ? "READ_ERROR " : "",
+          (unsigned long)dropped);
+        UART_Send(buf);
+      }
     }
 
 
@@ -258,124 +309,145 @@ void UART_Send(const char *message)
  */
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
-  uint8_t rcvd_msg[8];
-  uint8_t response[3];
-  if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, rcvd_msg) == HAL_OK)
+  can_rx_frame_t frame = {0};
+
+  /* Exactly one read per callback. Never wait for, or drain, the FIFO. */
+  if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &frame.header, frame.data) != HAL_OK)
   {
-    // Copy to debug buffer — will be printed in main loop (safe context)
-    memcpy(can_rx_debug_data, rcvd_msg, 8);
-    memcpy((void *)&can_rx_debug_header, &RxHeader, sizeof(CAN_RxHeaderTypeDef));
-    can_rx_flag = 1;
-
-    // Only process UDS requests on expected IDs (0x7DF functional, 0x7E0 physical)
-    // Ignore own TX frames (0x123) and loopback responses (0x7E0 is also our response ID)
-    // if (RxHeader.StdId != 0x7DF)
-    // {
-    //   return;
-    // }
-
-    // Identifier le service UDS basé sur le premier octet du message
-    switch (rcvd_msg[0])
-    {
-    case UDS_DIAGNOSTIC_SESSION_CONTROL:
-      // Call the Diagnostic Session Control service handler
-      uds_diagnostic_session_control(rcvd_msg[1]);
-      break;
-
-    case UDS_ECU_RESET:
-      // Call the ECU Reset service handler with resetType
-      uds_ecu_reset(rcvd_msg[1]);
-      break;
-    case UDS_SECURITY_ACCESS:
-      // Call the Security Access service handler
-      uds_security_access(rcvd_msg[1], &rcvd_msg[2], RxHeader.DLC - 2);
-      break;
-    case UDS_COMMUNICATION_CONTROL:
-      uds_communication_control(rcvd_msg[1]);
-      break;
-    case UDS_TESTER_PRESENT:
-      // Call the TesterPresent service handler
-      uds_tester_present(rcvd_msg[1]);
-      break;
-    case UDS_ACCESS_TIMING_PARAMETER:
-      // Call the Access Timing Parameter service handler
-      uds_access_timing_parameter(rcvd_msg[1], &rcvd_msg[2], RxHeader.DLC - 2);
-      break;
-    case UDS_SECURED_DATA_TRANSMISSION:
-      // Call the Secured Data Transmission service handler
-      uds_secured_data_transmission(&rcvd_msg[1], RxHeader.DLC - 1);
-      break;
-    case UDS_CONTROL_DTC_SETTING:
-      // Call the ControlDTCSetting service handler
-      uds_control_dtc_setting(rcvd_msg[1]);
-      break;
-    case UDS_RESPONSE_ON_EVENT:
-      // Call the ResponseOnEvent service handler
-      uds_response_on_event(rcvd_msg[1], &rcvd_msg[2], RxHeader.DLC - 2);
-      break;
-    case UDS_LINK_CONTROL:
-      // Call the LinkControl service handler
-      uds_link_control(rcvd_msg[1], &rcvd_msg[2], RxHeader.DLC - 2);
-      break;
-    case UDS_READ_DATA_BY_IDENTIFIER:
-      // Call the ReadDataByIdentifier service handler
-      uds_read_data_by_identifier(&rcvd_msg[1], RxHeader.DLC - 1);
-      break;
-    case UDS_READ_DATA_BY_PERIODIC_IDENTIFIER:
-      // Call the ReadDataByPeriodicIdentifier service handler
-      uds_read_data_by_periodic_identifier(&rcvd_msg[1], RxHeader.DLC - 1);
-      break;
-    case UDS_DYNAMICAL_DEFINE_DATA_IDENTIFIER:
-      // Call the DynamicallyDefineDataIdentifier service handler
-      uds_dynamically_define_data_identifier(rcvd_msg[1], &rcvd_msg[2], RxHeader.DLC - 2);
-      break;
-    case UDS_WRITE_DATA_BY_IDENTIFIER:
-      // Call the WriteDataByIdentifier service handler
-      uds_write_data_by_identifier(&rcvd_msg[1], RxHeader.DLC - 1);
-      break;
-    case UDS_CLEAR_DIAGNOSTIC_INFORMATION:
-      // Call the ClearDiagnosticInformation service handler
-      uds_clear_diagnostic_information(&rcvd_msg[1], RxHeader.DLC - 1);
-      break;
-    case UDS_READ_DTC_INFORMATION:
-      // Appeler la fonction pour gérer le service ReadDTCInformation
-      uds_read_dtc_information(rcvd_msg[1], &rcvd_msg[2], RxHeader.DLC - 2);
-      break;
-    case UDS_INPUT_OUTPUT_CONTROL_BY_IDENTIFIER:
-      uds_input_output_control_by_identifier((IOControlRequest_t *)&rcvd_msg[1], NULL);
-      break;
-    case UDS_ROUTINE_CONTROL:
-      uds_routine_control((RoutineControlRequest_t *)&rcvd_msg[1], NULL);
-      break;
-    case UDS_REQUEST_DOWNLOAD:
-      uds_request_download((RequestDownload_t *)&rcvd_msg[1]);
-      break;
-    case UDS_REQUEST_UPLOAD:
-      uds_request_upload((RequestUpload_t *)&rcvd_msg[1]);
-      break;
-    case UDS_TRANSFER_DATA:
-      uds_transfer_data((RequestTransferData_t *)&rcvd_msg[1]);
-      break;
-    case UDS_REQUEST_TRANSFER_EXIT:
-      uds_request_transfer_exit((RequestTransferExit_t *)&rcvd_msg[1], NULL);
-      break;
-    case UDS_REQUEST_FILE_TRANSFER:
-      uds_request_file_transfer((RequestFileTransfer_t *)&rcvd_msg[1]);
-      break;
-
-    default:
-      // Remplir le message de réponse négative pour un service non supporté
-      response[0] = UDS_NEGATIVE_RESPONSE;     // Réponse négative générique
-      response[1] = rcvd_msg[0];               // Service non supporté
-      response[2] = NRC_SERVICE_NOT_SUPPORTED; // Code NRC (ServiceNotSupported)
-
-      // Envoyer le message de réponse négative via CAN
-      send_can_message(response, 3);
-      break;
-    }
+    can_rx_flags |= CAN_RX_FLAG_READ_ERROR;
+    can_error_code |= HAL_CAN_GetError(hcan);
+    return;
   }
+
+  /* Read first so a full software queue still releases the hardware FIFO. */
+  if (can_rx_count == CAN_RX_QUEUE_CAPACITY)
+  {
+    can_rx_flags |= CAN_RX_FLAG_OVERFLOW;
+    if (can_rx_dropped != UINT32_MAX)
+    {
+      ++can_rx_dropped;
+    }
+    return;
+  }
+
+  can_rx_queue[can_rx_head] = frame;
+  can_rx_head = (can_rx_head + 1U) % CAN_RX_QUEUE_CAPACITY;
+  __DMB();
+  ++can_rx_count;
 }
 
+/* Foreground only: parsing, service execution and response transmission. */
+static void process_can_frame(can_rx_frame_t *frame)
+{
+  uint8_t *rcvd_msg = frame->data;
+  uint8_t response[3];
+
+  /* The existing dispatcher expects a SID and at least one parameter byte. */
+  if (frame->header.RTR != CAN_RTR_DATA ||
+      frame->header.DLC < 2U || frame->header.DLC > sizeof(frame->data))
+  {
+    return;
+  }
+
+  switch (rcvd_msg[0])
+  {
+  case UDS_DIAGNOSTIC_SESSION_CONTROL:
+    // Call the Diagnostic Session Control service handler
+    uds_diagnostic_session_control(rcvd_msg[1]);
+    break;
+
+  case UDS_ECU_RESET:
+    // Call the ECU Reset service handler with resetType
+    uds_ecu_reset(rcvd_msg[1]);
+    break;
+  case UDS_SECURITY_ACCESS:
+    // Call the Security Access service handler
+    uds_security_access(rcvd_msg[1], &rcvd_msg[2], frame->header.DLC - 2);
+    break;
+  case UDS_COMMUNICATION_CONTROL:
+    uds_communication_control(rcvd_msg[1]);
+    break;
+  case UDS_TESTER_PRESENT:
+    // Call the TesterPresent service handler
+    uds_tester_present(rcvd_msg[1]);
+    break;
+  case UDS_ACCESS_TIMING_PARAMETER:
+    // Call the Access Timing Parameter service handler
+    uds_access_timing_parameter(rcvd_msg[1], &rcvd_msg[2], frame->header.DLC - 2);
+    break;
+  case UDS_SECURED_DATA_TRANSMISSION:
+    // Call the Secured Data Transmission service handler
+    uds_secured_data_transmission(&rcvd_msg[1], frame->header.DLC - 1);
+    break;
+  case UDS_CONTROL_DTC_SETTING:
+    // Call the ControlDTCSetting service handler
+    uds_control_dtc_setting(rcvd_msg[1]);
+    break;
+  case UDS_RESPONSE_ON_EVENT:
+    // Call the ResponseOnEvent service handler
+    uds_response_on_event(rcvd_msg[1], &rcvd_msg[2], frame->header.DLC - 2);
+    break;
+  case UDS_LINK_CONTROL:
+    // Call the LinkControl service handler
+    uds_link_control(rcvd_msg[1], &rcvd_msg[2], frame->header.DLC - 2);
+    break;
+  case UDS_READ_DATA_BY_IDENTIFIER:
+    // Call the ReadDataByIdentifier service handler
+    uds_read_data_by_identifier(&rcvd_msg[1], frame->header.DLC - 1);
+    break;
+  case UDS_READ_DATA_BY_PERIODIC_IDENTIFIER:
+    // Call the ReadDataByPeriodicIdentifier service handler
+    uds_read_data_by_periodic_identifier(&rcvd_msg[1], frame->header.DLC - 1);
+    break;
+  case UDS_DYNAMICAL_DEFINE_DATA_IDENTIFIER:
+    // Call the DynamicallyDefineDataIdentifier service handler
+    uds_dynamically_define_data_identifier(rcvd_msg[1], &rcvd_msg[2], frame->header.DLC - 2);
+    break;
+  case UDS_WRITE_DATA_BY_IDENTIFIER:
+    // Call the WriteDataByIdentifier service handler
+    uds_write_data_by_identifier(&rcvd_msg[1], frame->header.DLC - 1);
+    break;
+  case UDS_CLEAR_DIAGNOSTIC_INFORMATION:
+    // Call the ClearDiagnosticInformation service handler
+    uds_clear_diagnostic_information(&rcvd_msg[1], frame->header.DLC - 1);
+    break;
+  case UDS_READ_DTC_INFORMATION:
+    // Appeler la fonction pour gérer le service ReadDTCInformation
+    uds_read_dtc_information(rcvd_msg[1], &rcvd_msg[2], frame->header.DLC - 2);
+    break;
+  case UDS_INPUT_OUTPUT_CONTROL_BY_IDENTIFIER:
+    uds_input_output_control_by_identifier((IOControlRequest_t *)&rcvd_msg[1], NULL);
+    break;
+  case UDS_ROUTINE_CONTROL:
+    uds_routine_control((RoutineControlRequest_t *)&rcvd_msg[1], NULL);
+    break;
+  case UDS_REQUEST_DOWNLOAD:
+    uds_request_download((RequestDownload_t *)&rcvd_msg[1]);
+    break;
+  case UDS_REQUEST_UPLOAD:
+    uds_request_upload((RequestUpload_t *)&rcvd_msg[1]);
+    break;
+  case UDS_TRANSFER_DATA:
+    uds_transfer_data((RequestTransferData_t *)&rcvd_msg[1]);
+    break;
+  case UDS_REQUEST_TRANSFER_EXIT:
+    uds_request_transfer_exit((RequestTransferExit_t *)&rcvd_msg[1], NULL);
+    break;
+  case UDS_REQUEST_FILE_TRANSFER:
+    uds_request_file_transfer((RequestFileTransfer_t *)&rcvd_msg[1]);
+    break;
+
+  default:
+    // Remplir le message de réponse négative pour un service non supporté
+    response[0] = UDS_NEGATIVE_RESPONSE;     // Réponse négative générique
+    response[1] = rcvd_msg[0];               // Service non supporté
+    response[2] = NRC_SERVICE_NOT_SUPPORTED; // Code NRC (ServiceNotSupported)
+
+    // Envoyer le message de réponse négative via CAN
+    send_can_message(response, 3);
+    break;
+  }
+}
 /**
  * @brief  Transmission Mailbox 0 complete callback.
  * @param  hcan pointer to a CAN_HandleTypeDef structure that contains
@@ -389,7 +461,7 @@ void HAL_CAN_TxMailbox0CompleteCallback(CAN_HandleTypeDef *hcan)
 
 void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan)
 {
-  can_error_code = HAL_CAN_GetError(hcan);
+  can_error_code |= HAL_CAN_GetError(hcan);
 }
 /* USER CODE END 4 */
 

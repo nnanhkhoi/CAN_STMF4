@@ -24,6 +24,10 @@ Core/Src/stm32f4xx_hal_msp.c \
 Core/Src/system_stm32f4xx.c \
 Core/Src/syscalls.c \
 Core/Src/sysmem.c \
+Core/Src/can.c \
+Core/Src/gpio.c \
+Core/Src/tim.c \
+Core/Src/usart.c \
 Core/Diagnostic/uds_services.c \
 Core/Diagnostic/Data_Transmission_functional_unit.c \
 Core/Diagnostic/Diagnostic_Communication_Management_functional_unit.c \

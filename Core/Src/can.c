@@ -75,6 +75,7 @@ void MX_CAN1_Init(void)
   // Enable notifications for CAN interrupts (RX + TX + errors)
   if (HAL_CAN_ActivateNotification(&hcan1,
         CAN_IT_RX_FIFO0_MSG_PENDING |
+        CAN_IT_RX_FIFO0_OVERRUN |
         CAN_IT_TX_MAILBOX_EMPTY |
         CAN_IT_ERROR_WARNING |
         CAN_IT_ERROR_PASSIVE |
@@ -129,7 +130,9 @@ void HAL_CAN_MspInit(CAN_HandleTypeDef* canHandle)
     HAL_NVIC_SetPriority(CAN1_RX0_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(CAN1_RX0_IRQn);
   /* USER CODE BEGIN CAN1_MspInit 1 */
-
+    /* Same priority as RX0: error flag writers cannot preempt each other. */
+    HAL_NVIC_SetPriority(CAN1_SCE_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(CAN1_SCE_IRQn);
   /* USER CODE END CAN1_MspInit 1 */
   }
 }
@@ -154,7 +157,7 @@ void HAL_CAN_MspDeInit(CAN_HandleTypeDef* canHandle)
     /* CAN1 interrupt Deinit */
     HAL_NVIC_DisableIRQ(CAN1_RX0_IRQn);
   /* USER CODE BEGIN CAN1_MspDeInit 1 */
-
+    HAL_NVIC_DisableIRQ(CAN1_SCE_IRQn);
   /* USER CODE END CAN1_MspDeInit 1 */
   }
 }
