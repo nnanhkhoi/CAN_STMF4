@@ -1,9 +1,10 @@
 # Build output
 Debug/
+build/
 
 # IDE settings
 .settings/
-.cproject
+# Keep .cproject: it contains the FreeRTOS build sources and include paths.
 .mxproject
 .project
 *.launch

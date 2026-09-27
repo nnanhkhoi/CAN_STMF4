@@ -32,6 +32,7 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "uds_services.h"
+#include "app_log.h"
 
 #define SYS_CLOCK_FREQ_50_MHZ   50
 #define SYS_CLOCK_FREQ_84_MHZ   84
@@ -71,7 +72,6 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-void UART_Send(const char *message);
 
 /* USER CODE END EFP */
 

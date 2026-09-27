@@ -19,6 +19,14 @@ BUILD_DIR = build
 ######################################
 C_SOURCES = \
 Core/Src/main.c \
+Core/BSW/Os/rtos.c \
+Core/BSW/Os/app_runnables.c \
+Core/BSW/Os/app_log.c \
+Core/BSW/Can/app_can.c \
+Middlewares/Third_Party/FreeRTOS/tasks.c \
+Middlewares/Third_Party/FreeRTOS/queue.c \
+Middlewares/Third_Party/FreeRTOS/list.c \
+Middlewares/Third_Party/FreeRTOS/portable/GCC/ARM_CM4F/port.c \
 Core/Src/stm32f4xx_it.c \
 Core/Src/stm32f4xx_hal_msp.c \
 Core/Src/system_stm32f4xx.c \
@@ -87,6 +95,10 @@ AS_INCLUDES =
 C_INCLUDES = \
 -ICore/Inc \
 -ICore/Diagnostic \
+-ICore/BSW/Os \
+-ICore/BSW/Can \
+-IMiddlewares/Third_Party/FreeRTOS/include \
+-IMiddlewares/Third_Party/FreeRTOS/portable/GCC/ARM_CM4F \
 -IDrivers/STM32F4xx_HAL_Driver/Inc \
 -IDrivers/CMSIS/Device/ST/STM32F4xx/Include \
 -IDrivers/CMSIS/Include
@@ -126,7 +138,7 @@ $(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR)
 $(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
 	$(AS) -c $(ASFLAGS) $< -o $@
 
-$(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) Makefile
+$(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) Makefile $(LDSCRIPT)
 	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
 	$(SZ) $@
 

@@ -151,6 +151,14 @@ SECTIONS
 
   } >RAM
 
+  /* FreeRTOS initializes these CPU-only stacks before use. */
+  .rtos_stacks (NOLOAD) :
+  {
+    . = ALIGN(8);
+    *(.rtos_stacks)
+    . = ALIGN(8);
+  } >CCMRAM
+
   _siccmram = LOADADDR(.ccmram);
 
   /* CCM-RAM section

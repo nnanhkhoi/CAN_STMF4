@@ -151,6 +151,15 @@ SECTIONS
 
   } >RAM AT> FLASH
 
+  /* FreeRTOS fills these stacks before starting any task. No flash image or
+     startup zeroing is needed. CCM is CPU-only and cannot hold DMA buffers. */
+  .rtos_stacks (NOLOAD) :
+  {
+    . = ALIGN(8);
+    *(.rtos_stacks)
+    . = ALIGN(8);
+  } >CCMRAM
+
   _siccmram = LOADADDR(.ccmram);
 
   /* CCM-RAM section
