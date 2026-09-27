@@ -6,6 +6,7 @@
  */
 #include "Stored_Data_Transmission_functional_unit.h"
 #include "uds_services.c"
+#include "CanTp_Cfg.h"
 
 
 
@@ -199,58 +200,40 @@ void uds_read_dtc_information(uint8_t sub_function, uint8_t* data, uint8_t data_
     }
 }
 
+/* Encode one complete response; CanTp alone handles fragmentation and flow control. */
 void send_positive_response_read_dtc_information(uint8_t sub_function, DTC_Record* dtcRecords, uint8_t dtcCount) {
-    // Limit the maximum size of the response to the size of a CAN message (e.g., 8 bytes)
-    uint8_t response[8];  // Array of response data limited to 8 bytes
-    uint8_t index = 0;
-
-    // Field 1: SID for ReadDTCInformation
-    response[index++] = 0x59;  // SID for ReadDTCInformation (positive response)
-
-    // Field 2: Type of report (sub_function)
+    static uint8_t response[CANTP_MAX_PAYLOAD]; /* Only the 10 ms task owns this scratch buffer. */
+    uint16_t index = 0U;
+    response[index++] = 0x59U;
     response[index++] = sub_function;
-
     switch (sub_function) {
         case REPORT_NUMBER_OF_DTC_BY_STATUS_MASK:
         case REPORT_NUMBER_OF_DTC_BY_SEVERITY_MASK:
-            // Fields 3: DTCStatusAvailabilityMask
             response[index++] = get_dtc_status_availability_mask();
-
-            // Fields 4: Number of DTCs
-            response[index++] = (dtcCount >> 8) & 0xFF;  // Octet high of the DTC count
-            response[index++] = dtcCount & 0xFF;         // Octet low of the DTC count
+            response[index++] = 0x01U; /* ISO 14229 DTC format identifier. */
+            response[index++] = 0U;
+            response[index++] = dtcCount;
             break;
-
         case REPORT_DTC_BY_STATUS_MASK:
         case REPORT_SUPPORTED_DTC:
         case REPORT_FIRST_TEST_FAILED_DTC:
-            // Add information about each DTC, send in multiple messages if necessary
-            for (uint8_t i = 0; i < dtcCount; i++) {
-                index = 2;  // Reset index after SID and sub-function for each new message
-
-                // Fields DTC
-                response[index++] = (dtcRecords[i].dtcNumber >> 16) & 0xFF;  // Octet high of the DTC
-                response[index++] = (dtcRecords[i].dtcNumber >> 8) & 0xFF;   // Octet middle of the DTC
-                response[index++] = dtcRecords[i].dtcNumber & 0xFF;          // Octet low of the DTC
-                response[index++] = dtcRecords[i].status;                    // Status of the DTC
-
-                // If the response is complete (7 bytes max for a CAN message), send the message
-                send_can_message(response, index);
-
-                // Reset the response array for the next DTC
-                index = 0;
+            if (3U + 4U * dtcCount > sizeof(response)) {
+                send_negative_response_read_dtc_information(sub_function, NRC_RESPONSE_TOO_LONG);
+                return;
             }
-            return;  // All messages have been sent
+            response[index++] = get_dtc_status_availability_mask();
+            for (uint16_t i = 0U; i < dtcCount; ++i) {
+                response[index++] = (uint8_t)(dtcRecords[i].dtcNumber >> 16);
+                response[index++] = (uint8_t)(dtcRecords[i].dtcNumber >> 8);
+                response[index++] = (uint8_t)dtcRecords[i].dtcNumber;
+                response[index++] = dtcRecords[i].status;
+            }
             break;
-
         default:
             send_negative_response_read_dtc_information(sub_function, NRC_SUB_FUNCTION_NOT_SUPPORTED);
             return;
     }
-
-    // Send the message if all bytes fit in a single CAN message
     send_can_message(response, index);
-    // send_uart_message(response, 3);
 }
 
 

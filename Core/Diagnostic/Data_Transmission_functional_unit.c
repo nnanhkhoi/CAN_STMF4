@@ -37,6 +37,15 @@ void uds_read_data_by_identifier(uint8_t* data, uint8_t data_length) {
     for (uint8_t i = 0; i < data_length; i += 2) {
         uint16_t did = (data[i] << 8) | data[i + 1];  // Retrieve the DID
 
+        /* Multi-frame requests can contain many DIDs. Check before writing,
+         * including repeated DIDs and the larger demonstration DID record. */
+        uint16_t record_size = did == SUPPORTED_DID_4 ? 11U :
+            ((did == SUPPORTED_DID_1 || did == SUPPORTED_DID_2 || did == SUPPORTED_DID_3) ? 4U : 0U);
+        if ((uint16_t)response_index + record_size > sizeof(response)) {
+            send_negative_response_read_data_by_identifier(NRC_RESPONSE_TOO_LONG);
+            return;
+        }
+
         // Verification that the service is supported for each DID in the active session
         if (!is_service_allowed(UDS_READ_DATA_BY_IDENTIFIER)) {
             send_negative_response_read_data_by_identifier(NRC_CONDITIONS_NOT_CORRECT);
@@ -121,6 +130,11 @@ bool is_security_required_for_did(uint16_t did) {
  * @param number_of_dids : Number of DIDs in the response
  */
 void send_positive_response_read_data_by_identifier(uint8_t* dataIdentifiers, uint8_t* dataRecords, uint8_t number_of_dids) {
+    /* Bound the encoded response before writing any repeated DID records. */
+    if (1U + 4U * number_of_dids > MAX_DATA_SIZE) {
+        send_negative_response_read_data_by_identifier(NRC_RESPONSE_TOO_LONG);
+        return;
+    }
     uint8_t response[MAX_DATA_SIZE] = {0};
     uint8_t index = 0;
 
@@ -624,25 +638,4 @@ bool are_conditions_correct_for_did(uint16_t dataIdentifier) {
         return false;  // Conditions not met if session is default
     }
     return true;
-}
-
-void send_can_message(uint8_t *message, uint8_t length) {
-    CAN_TxHeaderTypeDef TxHeader;
-    uint32_t TxMailbox;
-
-    TxHeader.DLC = length;
-    TxHeader.StdId = 0x7E0; // CAN ID for ECU responses
-    TxHeader.IDE = CAN_ID_STD;
-    TxHeader.RTR = CAN_RTR_DATA;
-    TxHeader.TransmitGlobalTime = DISABLE;
-
-    if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan1) == 0) {
-         UART_Send("No free mailbox!\n");
-        return; // No free mailbox — drop the response rather than blocking
-    }
-
-    if(HAL_OK == HAL_CAN_AddTxMessage(&hcan1, &TxHeader, message, &TxMailbox)) {
-        // Message sent successfully
-        UART_Send("Message sent!\n");
-    }
 }

@@ -23,6 +23,9 @@ Core/BSW/Os/rtos.c \
 Core/BSW/Os/app_runnables.c \
 Core/BSW/Os/app_log.c \
 Core/BSW/Can/app_can.c \
+Core/BSW/CanTp/CanTp.c \
+Core/BSW/CanTp/CanTp_Port.c \
+Core/Diagnostic/uds_transport.c \
 Middlewares/Third_Party/FreeRTOS/tasks.c \
 Middlewares/Third_Party/FreeRTOS/queue.c \
 Middlewares/Third_Party/FreeRTOS/list.c \
@@ -97,6 +100,7 @@ C_INCLUDES = \
 -ICore/Diagnostic \
 -ICore/BSW/Os \
 -ICore/BSW/Can \
+-ICore/BSW/CanTp \
 -IMiddlewares/Third_Party/FreeRTOS/include \
 -IMiddlewares/Third_Party/FreeRTOS/portable/GCC/ARM_CM4F \
 -IDrivers/STM32F4xx_HAL_Driver/Inc \

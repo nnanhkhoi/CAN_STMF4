@@ -85,7 +85,12 @@ void uds_routine_control(RoutineControlRequest_t *request, RoutineControlRespons
 // Function to send a positive response
 void send_positive_response_routine_control(RoutineControlResponse_t *response) {
     // Send the message via CAN
-    send_can_message((uint8_t *)response, sizeof(RoutineControlResponse_t));
+    /* Encode big-endian fields explicitly; C structure padding is not wire data. */
+    uint8_t payload[13] = {response->SID, response->routineControlType,
+        (uint8_t)(response->routineIdentifier >> 8), (uint8_t)response->routineIdentifier,
+        response->routineInfo};
+    memcpy(payload + 5, response->routineStatusRecord, sizeof(response->routineStatusRecord));
+    send_can_message(payload, sizeof(payload));
     // send_uart_message((uint8_t *)response, sizeof(RoutineControlResponse_t));
 }
 

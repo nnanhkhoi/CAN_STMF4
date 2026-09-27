@@ -61,16 +61,12 @@ void uds_input_output_control_by_identifier(IOControlRequest_t *request, IOContr
 
 // Function to send a positive response
 void send_positive_response_input_output_control_by_identifier(uint16_t dataIdentifier, uint8_t controlOptionRecord, uint8_t *controlStatusRecord) {
-    IOControlResponse_t response;
-
-    response.SID = UDS_RESPONSE_INPUT_OUTPUT_CONTROL;
-    response.dataIdentifier = dataIdentifier;
-
-    // Copy control states into the response
-    memcpy(response.controlStatusRecord, controlStatusRecord, sizeof(response.controlStatusRecord));
-
-    // Send the message via CAN
-    send_can_message((uint8_t*)&response, sizeof(response));
+    /* Send wire bytes, including the echoed control option, without ABI padding. */
+    uint8_t payload[4U + MAX_IO_CONTROL_DATA_SIZE] = {
+        UDS_RESPONSE_INPUT_OUTPUT_CONTROL, (uint8_t)(dataIdentifier >> 8),
+        (uint8_t)dataIdentifier, controlOptionRecord};
+    memcpy(payload + 4, controlStatusRecord, MAX_IO_CONTROL_DATA_SIZE);
+    send_can_message(payload, sizeof(payload));
     // send_uart_message((uint8_t*)&response, sizeof(response));
 }
 

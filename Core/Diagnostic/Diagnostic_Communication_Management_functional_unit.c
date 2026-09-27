@@ -1,5 +1,6 @@
 #include "uds_services.c"
 #include "Diagnostic_Communication_Management_functional_unit.h"
+#include "uds_transport.h"
 
 
 /****************************************Diagnostic Session Control************************************************************/
@@ -199,18 +200,18 @@ void uds_ecu_reset(uint8_t resetType) {
     // Execute the reset en fonction du resetType
     switch (resetType) {
         case UDS_RESET_TYPE_HARD_RESET:
-            hard_reset();  // Function that performs a hardware reset
+            UDS_AfterResponse(hard_reset); /* CanTp confirms the response before resetting. */
             break;
         case UDS_RESET_TYPE_SOFT_RESET:
-            soft_reset();  // Function that performs a software reset
+            UDS_AfterResponse(soft_reset);
             break;
         case UDS_RESET_TYPE_ENABLE_RAPID_POWER_SHUTDOWN:
             // Enable rapid power shutdown de l'alimentation
-            enable_rapid_power_shutdown();
+            UDS_AfterResponse(enable_rapid_power_shutdown);
             break;
         case UDS_RESET_TYPE_DISABLE_RAPID_POWER_SHUTDOWN:
             // Disable rapid power shutdown de l'alimentation
-            disable_rapid_power_shutdown();
+            UDS_AfterResponse(disable_rapid_power_shutdown);
             break;
         default:
             // In case of unsupported reset type
@@ -454,74 +455,19 @@ void send_negative_response_security_access(uint8_t sub_function, uint8_t nrc) {
 
 /************************************************CommunicationControl************************************************************/
 // Implementation du service Communication Control (0x28)
+/* Diagnostic CAN interrupts belong to CanTp. Normal-communication gating needs
+ * a separate application/Com hook; reject it until that hook is implemented. */
 void uds_communication_control(uint8_t sub_function) {
     switch (sub_function) {
         case UDS_COMM_CONTROL_ENABLE_RX_AND_TX:
-            // Enable Rx and Tx
-            if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_TX_MAILBOX_EMPTY) != HAL_OK) {
-                send_negative_response_communication_control(NRC_CONDITIONS_NOT_CORRECT);
-                return;
-            }
-            send_positive_response_communication_control(sub_function);
-            break;
-
         case UDS_COMM_CONTROL_ENABLE_RX_AND_DISABLE_TX:
-            // Activer uniquement Rx, desactiver Tx
-            if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK) {
-                send_negative_response_communication_control(NRC_CONDITIONS_NOT_CORRECT);
-                return;
-            }
-            if (HAL_CAN_DeactivateNotification(&hcan1, CAN_IT_TX_MAILBOX_EMPTY) != HAL_OK) {
-                send_negative_response_communication_control(NRC_CONDITIONS_NOT_CORRECT);
-                return;
-            }
-            send_positive_response_communication_control(sub_function);
-            break;
-
         case UDS_COMM_CONTROL_DISABLE_RX_AND_ENABLE_TX:
-            // Desactiver Rx, activer Tx
-            if (HAL_CAN_DeactivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK) {
-                send_negative_response_communication_control(NRC_CONDITIONS_NOT_CORRECT);
-                return;
-            }
-            if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_TX_MAILBOX_EMPTY) != HAL_OK) {
-                send_negative_response_communication_control(NRC_CONDITIONS_NOT_CORRECT);
-                return;
-            }
-            send_positive_response_communication_control(sub_function);
-            break;
-
         case UDS_COMM_CONTROL_DISABLE_RX_AND_TX:
-            // Desactiver e la fois Rx et Tx
-            if (HAL_CAN_DeactivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_TX_MAILBOX_EMPTY) != HAL_OK) {
-                send_negative_response_communication_control(NRC_CONDITIONS_NOT_CORRECT);
-                return;
-            }
-            send_positive_response_communication_control(sub_function);
-            break;
-
         case UDS_COMM_CONTROL_ENABLE_RX_AND_TX_WITH_ENHANCED_INFO:
-            // Enable Rx and Tx avec informations ameliorees
-            if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_TX_MAILBOX_EMPTY) != HAL_OK) {
-                send_negative_response_communication_control(NRC_CONDITIONS_NOT_CORRECT);
-                return;
-            }
-            // Ajoutez la logique pour les informations ameliorees ici
-            send_positive_response_communication_control(sub_function);
-            break;
-
         case UDS_COMM_CONTROL_ENABLE_RX_WITH_ENHANCED_INFO:
-            // Activer Rx avec informations ameliorees
-            if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK) {
-                send_negative_response_communication_control(NRC_CONDITIONS_NOT_CORRECT);
-                return;
-            }
-            // Ajoutez la logique pour les informations ameliorees ici
-            send_positive_response_communication_control(sub_function);
+            send_negative_response_communication_control(NRC_CONDITIONS_NOT_CORRECT);
             break;
-
         default:
-            // Unsupported sub-function
             send_negative_response_communication_control(NRC_SUB_FUNCTION_NOT_SUPPORTED);
             break;
     }

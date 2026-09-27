@@ -28,6 +28,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "rtos.h"
+#include "CanTp.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -57,41 +58,6 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-typedef struct
-{
-  const char *label; /* Test-case name printed with the CAN test result. */
-  uint8_t data[8];   /* CAN payload bytes to transmit. */
-  uint8_t len;       /* Number of valid payload bytes, from zero through eight. */
-} uds_test_case_t;
-
-static void send_test_can(const uds_test_case_t *tc)
-{
-  CAN_TxHeaderTypeDef TxHeader;
-  uint32_t TxMailbox;
-  uint8_t TxData[8] = {0};
-  char buf[60];
-
-  memcpy(TxData, tc->data, tc->len > 8 ? 8 : tc->len);
-
-  TxHeader.StdId = 0x7DF;
-  TxHeader.IDE = CAN_ID_STD;
-  TxHeader.RTR = CAN_RTR_DATA;
-  TxHeader.DLC = 8;
-  TxHeader.TransmitGlobalTime = DISABLE;
-
-  /* A disconnected bus must not prevent scheduler startup. */
-  if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan1) == 0U ||
-      HAL_CAN_AddTxMessage(&hcan1, &TxHeader, TxData, &TxMailbox) != HAL_OK)
-  {
-    snprintf(buf, sizeof(buf), "TX FAIL: %s\r\n", tc->label);
-  }
-  else
-  {
-    snprintf(buf, sizeof(buf), "TX OK: %s\r\n", tc->label);
-  }
-  UART_Send(buf);
-
-}
 /* USER CODE END 0 */
 
 /**
@@ -128,12 +94,8 @@ int main(void)
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
   UART_Send("UART Initialized Successfully!\r\n");
-  const uds_test_case_t test_cases[] = {
-    {"Test Case 1", {0x02, 0x10, 0x03}, 3},
-    {"Test Case 2", {0x02, 0x10, 0x04}, 3}
-  };
-
-  send_test_can(&test_cases[0]);
+  /* Initialize the transport before its first 10 ms activation. */
+  CanTp_Init();
   App_RtosStart();
   /* USER CODE END 2 */
 

@@ -72,11 +72,11 @@ void MX_CAN1_Init(void)
     Error_Handler();
   }
 
-  // Enable notifications for CAN interrupts (RX + TX + errors)
+  /* RX/errors use interrupts. CanTp polls TXOK before clearing RQCP;
+   * enabling TX-empty notifications would let HAL consume that result first. */
   if (HAL_CAN_ActivateNotification(&hcan1,
         CAN_IT_RX_FIFO0_MSG_PENDING |
         CAN_IT_RX_FIFO0_OVERRUN |
-        CAN_IT_TX_MAILBOX_EMPTY |
         CAN_IT_ERROR_WARNING |
         CAN_IT_ERROR_PASSIVE |
         CAN_IT_BUSOFF |

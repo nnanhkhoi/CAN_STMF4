@@ -5,7 +5,8 @@
 #include <stdbool.h>
 
 
-extern void send_can_message(uint8_t *message, uint8_t length);
+/* Queue one complete UDS payload through CanTp; length excludes the PCI bytes. */
+extern void send_can_message(const uint8_t *message, uint16_t length);
 // extern void send_uart_message(uint8_t *message, uint8_t length);
 // Size definitions
 #define MAX_DATA_SIZE 64

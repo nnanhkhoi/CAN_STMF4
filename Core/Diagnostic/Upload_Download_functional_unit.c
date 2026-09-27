@@ -36,7 +36,7 @@ void uds_request_download(RequestDownload_t *request) {
 
     // Prepare positive response
     ResponseDownload_t response;
-    response.lengthFormatIdentifier = 0x74; // Response identifier
+    response.lengthFormatIdentifier = 0x20; // Response identifier
     response.maxNumberOfBlockLength[0] = 0x00; // Replace with appropriate logic
     response.maxNumberOfBlockLength[1] = 0xFF; // Replace with appropriate logic
 
@@ -45,19 +45,18 @@ void uds_request_download(RequestDownload_t *request) {
 }
 
 // Function to send a positive response
+/* Encode the download response as UDS bytes before passing it to CanTp. */
 void send_positive_response_request_download(ResponseDownload_t *response) {
-    // Sending message via CAN
-    send_can_message((uint8_t *)response, sizeof(ResponseDownload_t));
-    // send_uart_message((uint8_t *)response, sizeof(ResponseDownload_t));
+    uint8_t payload[] = {0x74U, response->lengthFormatIdentifier,
+        response->maxNumberOfBlockLength[0], response->maxNumberOfBlockLength[1]};
+    send_can_message(payload, sizeof(payload));
 }
 
 // Function to send a negative response
+/* Send a standard three-byte UDS negative response through CanTp. */
 void send_negative_response_request_download(uint8_t nrc) {
-    uint8_t response[2];
-    response[0] = UDS_RESPONSE_REQUEST_DOWNLOAD; // Response SID
-    response[1] = nrc; // NRC
-    send_can_message(response, sizeof(response));
-    //send_uart_message(response, sizeof(response));
+    uint8_t payload[] = {0x7FU, 0x34U, nrc};
+    send_can_message(payload, sizeof(payload));
 }
 
 // Function to verify memory address validity
@@ -83,7 +82,7 @@ void uds_request_upload(RequestUpload_t *request) {
     }
 
     // 2. Identifier and data format verification
-    if (request->dataFormatIdentifier != 0x35) { // Validation example
+    if (request->dataFormatIdentifier != 0x00) { // Validation example
         send_negative_response_upload(NRC_REQUEST_OUT_OF_RANGE);
         return;
     }
@@ -103,26 +102,17 @@ void uds_request_upload(RequestUpload_t *request) {
 }
 
 // Function to send a positive response
+/* Encode a two-byte maximum block length with its UDS SID and length format. */
 void send_positive_response_upload(uint8_t *maxNumberOfBlockLength) {
-    ResponseUpload_t response;
-    response.lengthFormatIdentifier = 0x75; // LFID
-    response.maxNumberOfBlockLength[0] = maxNumberOfBlockLength[0];
-    response.maxNumberOfBlockLength[1] = maxNumberOfBlockLength[1];
-
-    // Send the message via CAN protocol or other appropriate method
-    send_can_message((uint8_t*)&response, sizeof(response));
-    //send_uart_message((uint8_t*)&response, sizeof(response));
+    uint8_t payload[] = {0x75U, 0x20U, maxNumberOfBlockLength[0], maxNumberOfBlockLength[1]};
+    send_can_message(payload, sizeof(payload));
 }
 
 // Function to send a negative response
+/* Send a standard three-byte UDS negative response through CanTp. */
 void send_negative_response_upload(uint8_t nrc) {
-    uint8_t response[2];
-    response[0] = 0x35; // Response SID
-    response[1] = nrc;
-
-    // Send the error message
-    send_can_message(response, sizeof(response));
-    //send_uart_message(response, sizeof(response));
+    uint8_t payload[] = {0x7FU, 0x35U, nrc};
+    send_can_message(payload, sizeof(payload));
 }
 
 // Example function to check if the security level is active
@@ -177,32 +167,17 @@ void uds_transfer_data(RequestTransferData_t *request) {
 // Function to send a positive response
 #include <string.h> // Include for memcpy
 
+/* No optional response record is implemented: send only SID and echoed BSC. */
 void send_positive_response_transfer_data(uint8_t blockSequenceCounter) {
-    ResponseTransferData_t response;
-    response.blockSequenceCounter = blockSequenceCounter;
-
-    // Fill response.transferResponseParameterRecord if necessary
-    // Example:
-    // response.transferResponseParameterRecord[0] = ...;
-
-    // Calculate total size of message to send
-    size_t responseSize = sizeof(response.blockSequenceCounter) +
-                          sizeof(response.transferResponseParameterRecord); // Add size of all members
-
-    // Send message via CAN protocol or other appropriate method
-    send_can_message((uint8_t*)&response, responseSize);
-    // send_uart_message((uint8_t*)&response, responseSize);
+    uint8_t payload[] = {0x76U, blockSequenceCounter};
+    send_can_message(payload, sizeof(payload));
 }
 
 // Function to send a negative response
+/* Send a standard three-byte UDS negative response through CanTp. */
 void send_negative_response_transfer_data(uint8_t nrc) {
-    uint8_t response[2];
-    response[0] = 0x36; // Response SID
-    response[1] = nrc;
-
-    // Send error message
-    send_can_message(response, sizeof(response));
-    //send_uart_message(response, sizeof(response));
+    uint8_t payload[] = {0x7FU, 0x36U, nrc};
+    send_can_message(payload, sizeof(payload));
 }
 
 // Example of request activity verification
@@ -256,21 +231,18 @@ void uds_request_transfer_exit(RequestTransferExit_t *request, ResponseTransferE
 }
 
 // Function to send a positive response
+/* The demonstration service has no optional exit record to serialize. */
 void send_positive_response_transfer_exit(ResponseTransferExit_t *response) {
-    // Send message via CAN protocol or other appropriate method
-    size_t response_size = sizeof(ResponseTransferExit_t); // Response size
-    send_can_message((uint8_t*)response, response_size);
+    (void)response;
+    const uint8_t payload[] = {0x77U};
+    send_can_message(payload, sizeof(payload));
 }
 
 // Function to send a negative response
+/* Send a standard three-byte UDS negative response through CanTp. */
 void send_negative_response_transfer_exit(uint8_t nrc) {
-    // Sending an error message via CAN
-    uint8_t response[2];
-    response[0] = UDS_RESPONSE_TRANSFER_EXIT; // Response SID
-    response[1] = nrc; // NRC
-
-    send_can_message(response, sizeof(response));
-    //send_uart_message(response, sizeof(response));
+    uint8_t payload[] = {0x7FU, 0x37U, nrc};
+    send_can_message(payload, sizeof(payload));
 }
 
 // Function to check if a transfer is in progress
@@ -304,7 +276,7 @@ void uds_request_file_transfer(RequestFileTransfer_t *request) {
     // (Add specific verifications here if necessary)
 
     // 4. Send positive response
-    ResponseFileTransfer_t response;
+    ResponseFileTransfer_t response = {0};
     response.SID = 0x78; // Response identifier
     response.modeOfOperation = request->modeOfOperation;
     response.lengthFormatIdentifier = 0x00; // To be defined according to context
@@ -320,18 +292,21 @@ void uds_request_file_transfer(RequestFileTransfer_t *request) {
 }
 
 // Function to send a positive response
+/* Serialize the legacy file-response model explicitly, without structure padding. */
 void send_positive_response_file_transfer(ResponseFileTransfer_t *response) {
-    // Send message via CAN protocol or other appropriate method
-    send_can_message((uint8_t*)response, sizeof(ResponseFileTransfer_t));
-    //send_uart_message((uint8_t*)response, sizeof(ResponseFileTransfer_t));
+    uint8_t payload[16] = {response->SID, response->modeOfOperation,
+        response->lengthFormatIdentifier, response->maxNumberOfBlockLength[0],
+        response->maxNumberOfBlockLength[1], response->dataFormatIdentifier,
+        (uint8_t)(response->fileSizeOrDirInfoParameterLength >> 8),
+        (uint8_t)response->fileSizeOrDirInfoParameterLength};
+    memcpy(payload + 8, response->fileSizeUncompressedOrDirInfoLength, 4U);
+    memcpy(payload + 12, response->fileSizeCompressed, 4U);
+    send_can_message(payload, sizeof(payload));
 }
 
 // Function to send a negative response
+/* Send a standard three-byte UDS negative response through CanTp. */
 void send_negative_response_file_transfer(uint8_t nrc) {
-    uint8_t response[2];
-    response[0] = 0x78; // Response identifier
-    response[1] = nrc; // NRC
-
-    // Send an error message via CAN
-    send_can_message(response, sizeof(response));
+    uint8_t payload[] = {0x7FU, 0x38U, nrc};
+    send_can_message(payload, sizeof(payload));
 }
